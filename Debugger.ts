@@ -8,6 +8,8 @@ const debuggerMenu = Menu.AddEntry("Debugger", "panorama/images/plus/achievement
 debuggerMenu.AddToggle("Debug GUIInfo", false).OnValue(toggle => GUIInfo.debug_draw = toggle.value)
 const renderGNV = debuggerMenu.AddToggle("Debug GridNav")
 
+const renderV3cursor = debuggerMenu.AddToggle("Debug cursor position")
+
 const sv_cheatsMenu = debuggerMenu.AddNode("Concommands", "panorama/images/plus/achievements/mvp_icon_png.vtex_c")
 const sv_cheats = sv_cheatsMenu.AddToggle("sv_cheats", false, "sv_cheats")
 sv_cheats.OnValue(setConVar)
@@ -85,6 +87,14 @@ function GetRectPolygon(rect: Rectangle): WorldPolygon {
 
 const GNVParticleManager = new ParticlesSDK()
 EventsSDK.on("Draw", () => {
+
+	if (renderV3cursor.value) {
+		const curPos = Input.CursorOnWorld
+		const position = RendererSDK.WorldToScreen(curPos)
+		if (position !== undefined)
+			RendererSDK.TextAroundMouse(`${curPos.toArray().map(x => Math.floor(x))}`)
+	}
+
 	if (renderGNV.value && GridNav !== undefined && LocalPlayer?.Hero !== undefined) {
 		const gridPos = GridNav.GetGridPosForPos(Vector2.FromVector3(Input.CursorOnWorld))
 
