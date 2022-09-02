@@ -20,8 +20,11 @@ wtf.OnValue(setConVar)
 const creepsNoSpawn = sv_cheatsMenu.AddToggle("Creeps no spawning", false, "dota_creeps_no_spawning")
 creepsNoSpawn.OnValue(setConVar)
 
-sv_cheatsMenu.AddKeybind("All vision", "", "dota_all_vision")
-	.OnRelease(() => ConVars.Set("dota_all_vision", ConVars.GetInt("dota_all_vision") === 0 ? 1 : 0))
+sv_cheatsMenu.AddKeybind("All vision", "", "dota_all_vision").OnRelease(() =>  {
+	let state =  ConVars.Get("dota_all_vision")
+	if (typeof state !== "number") state = 0
+	ConVars.Set("dota_all_vision", state)
+})
 
 sv_cheatsMenu.AddKeybind("Refresh", "", "dota_hero_refresh")
 	.OnRelease(exec)
@@ -38,7 +41,10 @@ addUnitMenu.AddKeybind("Add creep", "", "dota_create_unit npc_dota_creep_badguys
 	.OnRelease(exec)
 
 EventsSDK.on("GameStarted", () => {
-	ConVars.Set("sv_cheats", ConVars.GetInt("sv_cheats") || sv_cheats.value)
+	let state_sv_cheats = ConVars.Get("sv_cheats")
+	if (typeof state_sv_cheats !== "boolean")
+		state_sv_cheats = undefined
+	ConVars.Set("sv_cheats", state_sv_cheats || sv_cheats.value)
 	ConVars.Set("dota_ability_debug", wtf.value)
 	ConVars.Set("dota_creeps_no_spawning", creepsNoSpawn.value)
 })
