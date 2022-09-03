@@ -1,6 +1,6 @@
-import { BitsExtensions, Color, DOTAGameUIState_t, EventsSDK, ExecuteOrder, GameState, GetPositionHeight, GridNav, GridNavCellFlags, GUIInfo, Input, LocalPlayer, Menu, ParticlesSDK, ProjectileManager, Rectangle, RendererSDK, TickSleeper, Utils, Vector2, Vector3, WorldPolygon } from "./wrapper/Imports"
+import { BitsExtensions, Color, ConVarsSDK, DOTAGameUIState_t, EventsSDK, ExecuteOrder, GameState, GetPositionHeight, GridNav, GridNavCellFlags, GUIInfo, Input, LocalPlayer, Menu, ParticlesSDK, ProjectileManager, Rectangle, RendererSDK, TickSleeper, Utils, Vector2, Vector3, WorldPolygon } from "./wrapper/Imports"
 
-const setConVar = (self: Menu.Toggle) => ConVars.Set(self.InternalTooltipName, self.value)
+const setConVar = (self: Menu.Toggle) => ConVarsSDK.Set(self.InternalTooltipName, self.value)
 const exec = (self: Menu.Base) => GameState.ExecuteCommand(self.InternalTooltipName)
 
 const debuggerMenu = Menu.AddEntry("Debugger", "panorama/images/plus/achievements/mvp_icon_png.vtex_c")
@@ -20,11 +20,8 @@ wtf.OnValue(setConVar)
 const creepsNoSpawn = sv_cheatsMenu.AddToggle("Creeps no spawning", false, "dota_creeps_no_spawning")
 creepsNoSpawn.OnValue(setConVar)
 
-sv_cheatsMenu.AddKeybind("All vision", "", "dota_all_vision").OnRelease(() =>  {
-	let state =  ConVars.Get("dota_all_vision")
-	ConVars.Set("dota_all_vision", (typeof state === "boolean" ? state = !state : false))
-	console.log(state)
-})
+sv_cheatsMenu.AddKeybind("All vision", "", "dota_all_vision")
+	.OnRelease(() =>  ConVarsSDK.Set("dota_all_vision", !ConVarsSDK.GetBoolean("dota_all_vision", false)))
 
 sv_cheatsMenu.AddKeybind("Refresh", "", "dota_hero_refresh")
 	.OnRelease(exec)
@@ -41,12 +38,9 @@ addUnitMenu.AddKeybind("Add creep", "", "dota_create_unit npc_dota_creep_badguys
 	.OnRelease(exec)
 
 EventsSDK.on("GameStarted", () => {
-	let state_sv_cheats = ConVars.Get("sv_cheats")
-	if (typeof state_sv_cheats !== "boolean")
-		state_sv_cheats = undefined
-	ConVars.Set("sv_cheats", state_sv_cheats || sv_cheats.value)
-	ConVars.Set("dota_ability_debug", wtf.value)
-	ConVars.Set("dota_creeps_no_spawning", creepsNoSpawn.value)
+	ConVarsSDK.Set("sv_cheats", ConVarsSDK.GetBoolean("sv_cheats", false) || sv_cheats.value)
+	ConVarsSDK.Set("dota_ability_debug", wtf.value)
+	ConVarsSDK.Set("dota_creeps_no_spawning", creepsNoSpawn.value)
 })
 
 const debugEventsMenu = debuggerMenu.AddNode("Debugging events", "panorama/images/status_icons/information_psd.vtex_c", "Debugging native events in console")
