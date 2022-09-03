@@ -22,8 +22,8 @@ creepsNoSpawn.OnValue(setConVar)
 
 sv_cheatsMenu.AddKeybind("All vision", "", "dota_all_vision").OnRelease(() =>  {
 	let state =  ConVars.Get("dota_all_vision")
-	if (typeof state !== "number") state = 0
-	ConVars.Set("dota_all_vision", state)
+	ConVars.Set("dota_all_vision", (typeof state === "boolean" ? state = !state : false))
+	console.log(state)
 })
 
 sv_cheatsMenu.AddKeybind("Refresh", "", "dota_hero_refresh")
