@@ -1,4 +1,4 @@
-import { BitsExtensions, Color, ConVarsSDK, DOTAGameUIState_t, EventsSDK, ExecuteOrder, GameState, GetPositionHeight, GridNav, GridNavCellFlags, GUIInfo, Input, LocalPlayer, Menu, ParticlesSDK, ProjectileManager, Rectangle, RendererSDK, TickSleeper, Utils, Vector2, Vector3, WorldPolygon } from "./wrapper/Imports"
+import { BitsExtensions, Color, ConVarsSDK, DOTAGameUIState_t, EventsSDK, ExecuteOrder, GameState, GetPositionHeight, GridNav, GridNavCellFlags, GUIInfo, Input, LocalPlayer, Menu, ParticlesSDK, ProjectileManager, Rectangle, RendererSDK, TickSleeper, Utils, Vector2, Vector3, WorldPolygon } from "github.com/octarine-public/wrapper/wrapper/Imports"
 
 const setConVar = (self: Menu.Toggle) => ConVarsSDK.Set(self.InternalTooltipName, self.value)
 const exec = (self: Menu.Base) => GameState.ExecuteCommand(self.InternalTooltipName)
