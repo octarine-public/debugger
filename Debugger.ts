@@ -1,4 +1,4 @@
-import { BitsExtensions, Color, ConVarsSDK, DOTAGameUIState_t, EventsSDK, ExecuteOrder, GameState, GetPositionHeight, GridNav, GridNavCellFlags, GUIInfo, Input, LocalPlayer, Menu, ParticlesSDK, ProjectileManager, Rectangle, RendererSDK, TickSleeper, Utils, Vector2, Vector3, WorldPolygon } from "github.com/octarine-public/wrapper/wrapper/Imports"
+import { BitsExtensions, Color, ConVarsSDK, DOTAGameUIState_t, EventsSDK, ExecuteOrder, GameState, GetPositionHeight, GridNav, GridNavCellFlags, GUIInfo, Input, LocalPlayer, Menu, ParticlesSDK, ProjectileManager, Rectangle, RendererSDK, TickSleeper, Utils, Vector2, Vector3, WorldPolygon } from "github.com/octarine-public/wrapper/index"
 
 const setConVar = (self: Menu.Toggle) => ConVarsSDK.Set(self.InternalTooltipName, self.value)
 const exec = (self: Menu.Base) => GameState.ExecuteCommand(self.InternalTooltipName)
@@ -21,7 +21,7 @@ const creepsNoSpawn = sv_cheatsMenu.AddToggle("Creeps no spawning", false, "dota
 creepsNoSpawn.OnValue(setConVar)
 
 sv_cheatsMenu.AddKeybind("All vision", "", "dota_all_vision")
-	.OnRelease(() =>  ConVarsSDK.Set("dota_all_vision", !ConVarsSDK.GetBoolean("dota_all_vision", false)))
+	.OnRelease(() => ConVarsSDK.Set("dota_all_vision", !ConVarsSDK.GetBoolean("dota_all_vision", false)))
 
 sv_cheatsMenu.AddKeybind("Refresh", "", "dota_hero_refresh")
 	.OnRelease(exec)
