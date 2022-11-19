@@ -53,6 +53,7 @@ const humanizerMenu = debuggerMenu.AddNode("Humanizer", "panorama/images/plus/ac
 
 humanizerMenu.AddToggle("debug_draw").OnValue(toggle => ExecuteOrder.debug_draw = toggle.value)
 humanizerMenu.AddToggle("debug_orders").OnValue(toggle => ExecuteOrder.debug_orders = toggle.value)
+humanizerMenu.AddToggle("is_standalone").OnValue(toggle => ExecuteOrder.is_standalone = toggle.value)
 
 let press = false
 const sleeper = new TickSleeper()
