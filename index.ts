@@ -27,20 +27,14 @@ import {
 const setConVar = (self: Menu.Toggle) => ConVarsSDK.Set(self.InternalTooltipName, self.value)
 const exec = (self: Menu.Base) => GameState.ExecuteCommand(self.InternalTooltipName)
 
-const debuggerMenu = Menu.AddEntry(
-	"Debugger",
-	"panorama/images/plus/achievements/mvp_icon_png.vtex_c"
-)
+const debuggerMenu = Menu.AddEntry("Debugger", "panorama/images/plus/achievements/mvp_icon_png.vtex_c")
 
 debuggerMenu.AddToggle("Debug GUIInfo", false).OnValue(toggle => (GUIInfo.debugDraw = toggle.value))
 const renderGNV = debuggerMenu.AddToggle("Debug GridNav")
 
 const renderV3cursor = debuggerMenu.AddToggle("Debug cursor position")
 
-const svCheatsMenu = debuggerMenu.AddNode(
-	"Concommands",
-	"panorama/images/plus/achievements/mvp_icon_png.vtex_c"
-)
+const svCheatsMenu = debuggerMenu.AddNode("Concommands", "panorama/images/plus/achievements/mvp_icon_png.vtex_c")
 const svCheats = svCheatsMenu.AddToggle("sv_cheats", false, "sv_cheats")
 svCheats.OnValue(setConVar)
 
@@ -52,9 +46,7 @@ creepsNoSpawn.OnValue(setConVar)
 
 svCheatsMenu
 	.AddKeybind("All vision", "", "dota_all_vision")
-	.OnRelease(() =>
-		ConVarsSDK.Set("dota_all_vision", !ConVarsSDK.GetBoolean("dota_all_vision", false))
-	)
+	.OnRelease(() => ConVarsSDK.Set("dota_all_vision", !ConVarsSDK.GetBoolean("dota_all_vision", false)))
 
 svCheatsMenu.AddKeybind("Refresh", "", "dota_hero_refresh").OnRelease(exec)
 
@@ -62,14 +54,9 @@ svCheatsMenu.AddButton("Local lvl max", "dota_hero_level 25").OnValue(exec)
 
 svCheatsMenu.AddButton("Get Rapier God", "dota_rap_god").OnValue(exec)
 
-const addUnitMenu = debuggerMenu.AddNode(
-	"add unit",
-	"panorama/images/spellicons/techies_focused_detonate_png.vtex_c"
-)
+const addUnitMenu = debuggerMenu.AddNode("add unit", "panorama/images/spellicons/techies_focused_detonate_png.vtex_c")
 
-addUnitMenu
-	.AddKeybind("Add creep", "", "dota_create_unit npc_dota_creep_badguys_melee enemy")
-	.OnRelease(exec)
+addUnitMenu.AddKeybind("Add creep", "", "dota_create_unit npc_dota_creep_badguys_melee enemy").OnRelease(exec)
 
 EventsSDK.on("GameStarted", () => {
 	ConVarsSDK.Set("sv_cheats", ConVarsSDK.GetBoolean("sv_cheats", false) || svCheats.value)
@@ -105,9 +92,13 @@ addUnitMenu.AddKeybind("Full sven").OnRelease(() => {
 
 EventsSDK.on("Tick", () => {
 	if (press) {
-		for (var i = 6; i--; ) GameState.ExecuteCommand("dota_bot_give_item item_heart")
+		for (var i = 6; i--; ) {
+			GameState.ExecuteCommand("dota_bot_give_item item_heart")
+		}
 		GameState.ExecuteCommand("dota_bot_give_level 30")
-		if (!sleeper.Sleeping) press = false
+		if (!sleeper.Sleeping) {
+			press = false
+		}
 	}
 })
 
@@ -129,14 +120,15 @@ EventsSDK.on("Draw", () => {
 	if (renderV3cursor.value) {
 		const curPos = Input.CursorOnWorld
 		const position = RendererSDK.WorldToScreen(curPos)
-		if (position !== undefined)
+		if (position !== undefined) {
 			RendererSDK.TextAroundMouse(`${curPos.toArray().map(x => Math.floor(x))}`)
+		}
 	}
 
 	if (renderGNV.value && GridNav !== undefined && LocalPlayer?.Hero !== undefined) {
 		const gridPos = GridNav.GetGridPosForPos(Vector2.FromVector3(Input.CursorOnWorld))
 
-		for (let i = -10; i < 10; i++)
+		for (let i = -10; i < 10; i++) {
 			for (let j = -10; j < 10; j++) {
 				const x = gridPos.x + i
 				const y = gridPos.y + j
@@ -147,122 +139,130 @@ EventsSDK.on("Draw", () => {
 				rect.pos1.AddScalarForThis(1)
 				rect.pos2.SubtractScalarForThis(1)
 
-				if (BitsExtensions.HasBit(flags, GridNavCellFlags.Walkable))
-					GetRectPolygon(rect).Draw(
-						baseKey + currentKey++,
-						LocalPlayer.Hero,
-						GNVParticleManager,
-						Color.Green
-					)
-				else GetRectPolygon(rect).Destroy(baseKey + currentKey++, GNVParticleManager)
+				if (BitsExtensions.HasBit(flags, GridNavCellFlags.Walkable)) {
+					GetRectPolygon(rect).Draw(baseKey + currentKey++, LocalPlayer.Hero, GNVParticleManager, Color.Green)
+				} else {
+					GetRectPolygon(rect).Destroy(baseKey + currentKey++, GNVParticleManager)
+				}
 
 				rect.pos1.AddScalarForThis(5)
 				rect.pos2.SubtractScalarForThis(5)
 
-				if (BitsExtensions.HasBit(flags, GridNavCellFlags.Tree))
+				if (BitsExtensions.HasBit(flags, GridNavCellFlags.Tree)) {
 					GetRectPolygon(rect).Draw(
 						baseKey + currentKey++,
 						LocalPlayer.Hero,
 						GNVParticleManager,
 						Color.Orange
 					)
-				else GetRectPolygon(rect).Destroy(baseKey + currentKey++, GNVParticleManager)
+				} else {
+					GetRectPolygon(rect).Destroy(baseKey + currentKey++, GNVParticleManager)
+				}
 
 				rect.pos1.AddScalarForThis(5)
 				rect.pos2.SubtractScalarForThis(5)
 
-				if (BitsExtensions.HasBit(flags, GridNavCellFlags.MovementBlocker))
-					GetRectPolygon(rect).Draw(
-						baseKey + currentKey++,
-						LocalPlayer.Hero,
-						GNVParticleManager,
-						Color.Red
-					)
-				else GetRectPolygon(rect).Destroy(baseKey + currentKey++, GNVParticleManager)
+				if (BitsExtensions.HasBit(flags, GridNavCellFlags.MovementBlocker)) {
+					GetRectPolygon(rect).Draw(baseKey + currentKey++, LocalPlayer.Hero, GNVParticleManager, Color.Red)
+				} else {
+					GetRectPolygon(rect).Destroy(baseKey + currentKey++, GNVParticleManager)
+				}
 
 				rect.pos1.AddScalarForThis(5)
 				rect.pos2.SubtractScalarForThis(5)
 
-				if (BitsExtensions.HasBit(flags, GridNavCellFlags.InteractionBlocker))
+				if (BitsExtensions.HasBit(flags, GridNavCellFlags.InteractionBlocker)) {
 					GetRectPolygon(rect).Draw(
 						baseKey + currentKey++,
 						LocalPlayer.Hero,
 						GNVParticleManager,
 						Color.Fuchsia
 					)
-				else GetRectPolygon(rect).Destroy(baseKey + currentKey++, GNVParticleManager)
+				} else {
+					GetRectPolygon(rect).Destroy(baseKey + currentKey++, GNVParticleManager)
+				}
 			}
-	} else GNVParticleManager.DestroyAll()
+		}
+	} else {
+		GNVParticleManager.DestroyAll()
+	}
+
 	if (
 		!debugEvents.value ||
 		!debugProjectiles.value ||
 		GameState.UIState !== DOTAGameUIState.DOTA_GAME_UI_DOTA_INGAME
-	)
+	) {
 		return
+	}
+
 	ProjectileManager.AllTrackingProjectiles.forEach(proj => {
 		const w2s = RendererSDK.WorldToScreen(proj.Position)
-		if (w2s === undefined) return
-		RendererSDK.FilledRect(
-			w2s.SubtractForThis(new Vector2(10, 10)),
-			new Vector2(20, 20),
-			new Color(0, 255)
-		)
+		if (w2s === undefined) {
+			return
+		}
+		RendererSDK.FilledRect(w2s.SubtractForThis(new Vector2(10, 10)), new Vector2(20, 20), new Color(0, 255))
 	})
 	ProjectileManager.AllLinearProjectiles.forEach(proj => {
 		const w2s = RendererSDK.WorldToScreen(proj.Position)
-		if (w2s === undefined) return
-		RendererSDK.FilledRect(
-			w2s.SubtractForThis(new Vector2(10, 10)),
-			new Vector2(20, 20),
-			new Color(255)
-		)
+		if (w2s === undefined) {
+			return
+		}
+		RendererSDK.FilledRect(w2s.SubtractForThis(new Vector2(10, 10)), new Vector2(20, 20), new Color(255))
 	})
 })
 
 function SafeLog(...args: any[]) {
 	console.log(
 		...args.map(arg =>
-			JSON.parse(
-				JSON.stringify(arg, (_, value) =>
-					typeof value === "bigint" ? value.toString() + "n" : value
-				)
-			)
+			JSON.parse(JSON.stringify(arg, (_, value) => (typeof value === "bigint" ? value.toString() + "n" : value)))
 		)
 	)
 }
 
 EventsSDK.on("GameEvent", (name, obj) => {
-	if (!debugEvents.value) return
+	if (!debugEvents.value) {
+		return
+	}
 	SafeLog("GameEvent", name, obj)
 })
 EventsSDK.on("ServerInfo", obj => {
-	if (!debugEvents.value) return
+	if (!debugEvents.value) {
+		return
+	}
 	SafeLog("ServerInfo", Utils.MapToObject(obj))
 })
 
 EventsSDK.on("ParticleCreated", par => {
-	if (!debugEvents.value) return
+	if (!debugEvents.value) {
+		return
+	}
 	console.log(GameState.RawGameTime, {
 		ParticleCreated: par
 	})
 })
 
 EventsSDK.on("ParticleUpdated", par => {
-	if (!debugEvents.value) return
+	if (!debugEvents.value) {
+		return
+	}
 	console.log(GameState.RawGameTime, {
 		ParticleUpdated: par
 	})
 })
 
 EventsSDK.on("ParticleDestroyed", par => {
-	if (!debugEvents.value) return
+	if (!debugEvents.value) {
+		return
+	}
 	console.log(GameState.RawGameTime, {
 		ParticleDestroyed: par
 	})
 })
 
 EventsSDK.on("StartSound", (name, sourceEnt, position, _seed, startTime) => {
-	if (!debugEvents.value) return
+	if (!debugEvents.value) {
+		return
+	}
 	console.log(GameState.RawGameTime, {
 		StartSound: {
 			name,
@@ -274,7 +274,9 @@ EventsSDK.on("StartSound", (name, sourceEnt, position, _seed, startTime) => {
 })
 
 EventsSDK.on("ModifierCreated", mod => {
-	if (!debugEvents.value) return
+	if (!debugEvents.value) {
+		return
+	}
 	console.log(GameState.RawGameTime, {
 		ModifierCreated: {
 			mod
@@ -283,7 +285,9 @@ EventsSDK.on("ModifierCreated", mod => {
 })
 
 EventsSDK.on("ModifierRemoved", mod => {
-	if (!debugEvents.value) return
+	if (!debugEvents.value) {
+		return
+	}
 	console.log(GameState.RawGameTime, {
 		ModifierRemoved: {
 			mod
