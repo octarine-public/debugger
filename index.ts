@@ -24,7 +24,7 @@ import {
 	WorldPolygon
 } from "github.com/octarine-public/wrapper/index"
 
-const setConVar = (self: Menu.Toggle) => ConVarsSDK.Set(self.InternalTooltipName, self.value)
+const setConVar = (self: Menu.Toggle) => ConVars.Set(self.InternalTooltipName, self.value)
 const exec = (self: Menu.Base) => GameState.ExecuteCommand(self.InternalTooltipName)
 
 const debuggerMenu = Menu.AddEntry("Debugger", "panorama/images/plus/achievements/mvp_icon_png.vtex_c")
@@ -46,7 +46,7 @@ creepsNoSpawn.OnValue(setConVar)
 
 svCheatsMenu
 	.AddKeybind("All vision", "", "dota_all_vision")
-	.OnRelease(() => ConVarsSDK.Set("dota_all_vision", !ConVarsSDK.GetBoolean("dota_all_vision", false)))
+	.OnRelease(() => ConVars.Set("dota_all_vision", !ConVarsSDK.GetBoolean("dota_all_vision", false)))
 
 svCheatsMenu.AddKeybind("Refresh", "", "dota_hero_refresh").OnRelease(exec)
 
@@ -59,9 +59,9 @@ const addUnitMenu = debuggerMenu.AddNode("add unit", "panorama/images/spellicons
 addUnitMenu.AddKeybind("Add creep", "", "dota_create_unit npc_dota_creep_badguys_melee enemy").OnRelease(exec)
 
 EventsSDK.on("GameStarted", () => {
-	ConVarsSDK.Set("sv_cheats", ConVarsSDK.GetBoolean("sv_cheats", false) || svCheats.value)
-	ConVarsSDK.Set("dota_ability_debug", wtf.value)
-	ConVarsSDK.Set("dota_creeps_no_spawning", creepsNoSpawn.value)
+	ConVars.Set("sv_cheats", ConVarsSDK.GetBoolean("sv_cheats", false) || svCheats.value)
+	ConVars.Set("dota_ability_debug", wtf.value)
+	ConVars.Set("dota_creeps_no_spawning", creepsNoSpawn.value)
 })
 
 const debugEventsMenu = debuggerMenu.AddNode(
