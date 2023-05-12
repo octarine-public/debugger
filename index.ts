@@ -50,7 +50,7 @@ svCheatsMenu
 
 svCheatsMenu.AddKeybind("Refresh", "", "dota_hero_refresh").OnRelease(exec)
 
-svCheatsMenu.AddButton("Local lvl max", "dota_hero_level 25").OnValue(exec)
+svCheatsMenu.AddButton("Local lvl max", "dota_hero_level 30").OnValue(exec)
 
 svCheatsMenu.AddButton("Get Rapier God", "dota_rap_god").OnValue(exec)
 
