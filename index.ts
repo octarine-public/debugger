@@ -52,18 +52,15 @@ const timeScale = svCheatsMenu.AddSlider("Time Scale (n)", 1, 1, 10, 1)
 
 svCheatsMenu
 	.AddKeybind("Time Scale (slider)", "", "host_timescale")
-	.OnRelease(() =>ConVars.Set("host_timescale", timeScale.value))
+	.OnRelease(() => ConVars.Set("host_timescale", timeScale.value))
 
-svCheatsMenu
-	.AddKeybind("Time Scale (normal)", "", "host_timescale")
-	.OnRelease(() => ConVars.Set("host_timescale", 1))
+svCheatsMenu.AddKeybind("Time Scale (normal)", "", "host_timescale").OnRelease(() => ConVars.Set("host_timescale", 1))
 
 svCheatsMenu.AddKeybind("Refresh", "", "dota_hero_refresh").OnRelease(exec)
 
 svCheatsMenu.AddButton("Local lvl max", "dota_hero_level 30").OnValue(exec)
 
 svCheatsMenu.AddButton("Get Rapier God", "dota_rap_god").OnValue(exec)
-
 
 // https://github.com/octarine-public/debugger
 
