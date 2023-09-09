@@ -28,6 +28,7 @@ const setConVar = (self: Menu.Toggle) => ConVars.Set(self.InternalTooltipName, s
 const exec = (self: Menu.Base) => GameState.ExecuteCommand(self.InternalTooltipName)
 
 const debuggerMenu = Menu.AddEntry("Debugger", "panorama/images/plus/achievements/mvp_icon_png.vtex_c")
+// debuggerMenu.IsHidden = (globalThis as any).DEBUGER_ENABLE ?? true
 
 debuggerMenu.AddToggle("Debug GUIInfo", false).OnValue(toggle => (GUIInfo.debugDraw = toggle.value))
 const renderGNV = debuggerMenu.AddToggle("Debug GridNav")
