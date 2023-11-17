@@ -41,7 +41,9 @@ debuggerMenu
 	.OnValue(toggle => (GUIInfo.debugDraw = toggle.value))
 const renderGNV = debuggerMenu.AddToggle("Debug GridNav")
 
-const renderV3cursor = debuggerMenu.AddToggle("Debug cursor position")
+const renderV3cursor = debuggerMenu.AddToggle("Debug world cursor position")
+
+const screenCursor = debuggerMenu.AddToggle("Debug screen cursor position")
 
 const svCheatsMenu = debuggerMenu.AddNode(
 	"Concommands",
@@ -172,7 +174,7 @@ EventsSDK.on("PostDataUpdate", () => {
 	}
 
 	if (pressSven) {
-		for (let i = 6; i--; ) {
+		for (let i = 6; i--;) {
 			GameState.ExecuteCommand("dota_bot_give_item item_heart")
 		}
 		GameState.ExecuteCommand("dota_bot_give_level 30")
@@ -191,10 +193,9 @@ EventsSDK.on("PostDataUpdate", () => {
 				creepTypeName = "neutral"
 				break
 		}
-		for (let i = countCreeps.value; i--; ) {
+		for (let i = countCreeps.value; i--;) {
 			GameState.ExecuteCommand(
-				`dota_create_unit npc_dota_creep_${
-					LocalPlayer?.Team ?? Team.Dire === Team.Dire ? "badguys" : "goodguys"
+				`dota_create_unit npc_dota_creep_${LocalPlayer?.Team ?? Team.Dire === Team.Dire ? "badguys" : "goodguys"
 				}_${creepsType.SelectedID === 0 ? "melee" : "ranged"} ${creepTypeName}`
 			)
 		}
@@ -225,6 +226,11 @@ EventsSDK.on("Draw", () => {
 		if (position !== undefined) {
 			RendererSDK.TextAroundMouse(`${curPos.toArray().map(x => Math.floor(x))}`)
 		}
+	}
+
+	if (screenCursor.value) {
+		const curPos = Input.CursorOnScreen
+		RendererSDK.TextAroundMouse(`${curPos.toArray().map(x => Math.floor(x))}`, undefined, Color.White)
 	}
 
 	if (renderGNV.value && GridNav !== undefined && LocalPlayer?.Hero !== undefined) {
