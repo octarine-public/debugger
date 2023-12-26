@@ -27,6 +27,10 @@ import {
 	WorldPolygon
 } from "github.com/octarine-public/wrapper/index"
 
+// for scripts
+const globalThisAny = globalThis as any
+globalThisAny.DEBUGGER_INSTALLED = true
+
 const setConVar = (self: Menu.Toggle) => ConVars.Set(self.InternalTooltipName, self.value)
 const exec = (self: Menu.Base) => GameState.ExecuteCommand(self.InternalTooltipName)
 
