@@ -1,11 +1,8 @@
 {
 	"root": true,
 	"ignorePatterns": [
-		"wrapper_autogen/**/*",
 		"node_modules/**/*",
-		"scripts_files/**/*",
-		"standard.d.ts",
-		"octarine-core.d.ts"
+		"scripts_files/**/*"
 	],
 	"env": {
 		"es6": true
