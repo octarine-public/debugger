@@ -17,6 +17,7 @@ import {
 	LocalPlayer,
 	Menu,
 	ParticlesSDK,
+	PlayerCustomData,
 	ProjectileManager,
 	Rectangle,
 	RendererSDK,
@@ -31,8 +32,23 @@ import {
 const globalThisAny = globalThis as any
 globalThisAny.DEBUGGER_INSTALLED = true
 
-const setConVar = (self: Menu.Toggle) => ConVars.Set(self.InternalTooltipName, self.value)
 const exec = (self: Menu.Base) => GameState.ExecuteCommand(self.InternalTooltipName)
+
+function setConVar() {
+	ConVars.Set("sv_cheats", ConVarsSDK.GetBoolean("sv_cheats", false) || svCheats.value)
+
+	const players = PlayerCustomData.Array.filter(x => x.SteamID !== 0n)
+	if (players.length === 1) {
+		GameState.ExecuteCommand(
+			wtf.value ? "dota_ability_debug_enable" : "dota_ability_debug_disable"
+		)
+		GameState.ExecuteCommand(
+			creepsNoSpawn.value
+				? "dota_creeps_no_spawning_enable"
+				: "dota_creeps_no_spawning_disable"
+		)
+	}
+}
 
 const debuggerMenu = Menu.AddEntry(
 	"Debugger",
@@ -66,11 +82,13 @@ const creepsNoSpawn = svCheatsMenu.AddToggle(
 )
 creepsNoSpawn.OnValue(setConVar)
 
-svCheatsMenu
-	.AddKeybind("All vision", "", "dota_all_vision")
-	.OnRelease(() =>
-		ConVars.Set("dota_all_vision", !ConVarsSDK.GetBoolean("dota_all_vision", false))
+svCheatsMenu.AddKeybind("All vision", "", "dota_all_vision").OnRelease(() => {
+	GameState.ExecuteCommand(
+		!ConVarsSDK.GetBoolean("dota_all_vision", false)
+			? "dota_all_vision_enable"
+			: "dota_all_vision_disable"
 	)
+})
 
 const timeScale = svCheatsMenu.AddSlider("Time Scale (n)", 1, 1, 10, 1)
 
@@ -99,11 +117,7 @@ addUnitMenu
 	.AddKeybind("Add creep", "", "dota_create_unit npc_dota_creep_badguys_melee enemy")
 	.OnRelease(exec)
 
-EventsSDK.on("GameStarted", () => {
-	ConVars.Set("sv_cheats", ConVarsSDK.GetBoolean("sv_cheats", false) || svCheats.value)
-	ConVars.Set("dota_ability_debug", wtf.value)
-	ConVars.Set("dota_creeps_no_spawning", creepsNoSpawn.value)
-})
+EventsSDK.on("GameStarted", setConVar)
 
 const debugEventsMenu = debuggerMenu.AddNode(
 	"Debugging events",
@@ -140,7 +154,8 @@ const canBeDown = () => {
 	)
 }
 
-let pressSven = false
+let pressSven = false,
+	pressSniper = false
 const sleeper = new GameSleeper()
 addUnitMenu.AddKeybind("Full sven").OnRelease(() => {
 	if (canBeDown()) {
@@ -150,6 +165,17 @@ addUnitMenu.AddKeybind("Full sven").OnRelease(() => {
 		return
 	}
 	pressSven = false
+	sleeper.FullReset()
+})
+
+addUnitMenu.AddKeybind("Full sniper").OnRelease(() => {
+	if (canBeDown()) {
+		GameState.ExecuteCommand("dota_create_unit npc_dota_hero_sniper enemy")
+		pressSniper = true
+		sleeper.Sleep(1000 + GameState.Ping / 2, "addSniper")
+		return
+	}
+	pressSniper = false
 	sleeper.FullReset()
 })
 
@@ -184,6 +210,14 @@ EventsSDK.on("PostDataUpdate", () => {
 		GameState.ExecuteCommand("dota_bot_give_level 30")
 		if (!sleeper.Sleeping("addSven")) {
 			pressSven = false
+		}
+	}
+
+	if (pressSniper) {
+		GameState.ExecuteCommand("dota_bot_give_level 5")
+		GameState.ExecuteCommand("dota_bot_give_item item_ultimate_scepter")
+		if (!sleeper.Sleeping("addSniper")) {
+			pressSniper = false
 		}
 	}
 
@@ -450,4 +484,10 @@ EventsSDK.on("GameEnded", () => {
 	pressSven = false
 	pressCreeps = false
 	sleeper.FullReset()
+})
+
+EventsSDK.on("PlayerCustomDataUpdated", player => {
+	if (player.IsValid && !player.IsSpectator) {
+		setConVar()
+	}
 })
