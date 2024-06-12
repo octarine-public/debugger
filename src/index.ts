@@ -144,6 +144,9 @@ humanizerMenu
 humanizerMenu
 	.AddToggle("debug_orders")
 	.OnValue(toggle => (ExecuteOrder.DebugOrders = toggle.value))
+humanizerMenu
+	.AddToggle("unsafe_mode")
+	.OnValue(toggle => (ExecuteOrder.unsafeMode = toggle.value))
 
 const canBeDown = () => {
 	return (
