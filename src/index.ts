@@ -59,6 +59,7 @@ const debuggerMenu = Menu.AddEntry(
 debuggerMenu
 	.AddToggle("Debug GUIInfo", false)
 	.OnValue(toggle => (GUIInfo.debugDraw = toggle.value))
+
 const renderGNV = debuggerMenu.AddToggle("Debug GridNav")
 
 const renderV3cursor = debuggerMenu.AddToggle("Debug world cursor position")
@@ -105,8 +106,6 @@ svCheatsMenu.AddKeybind("Refresh", "", "dota_hero_refresh").OnRelease(exec)
 svCheatsMenu.AddButton("Local lvl max", "dota_hero_level 30").OnValue(exec)
 
 svCheatsMenu.AddButton("Get Rapier God", "dota_rap_god").OnValue(exec)
-
-// https://github.com/octarine-public/debugger
 
 const addUnitMenu = debuggerMenu.AddNode(
 	"add unit",
