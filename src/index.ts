@@ -35,8 +35,10 @@ globalThisAny.DEBUGGER_INSTALLED = true
 const exec = (self: Menu.Base) => GameState.ExecuteCommand(self.InternalTooltipName)
 
 function setConVar() {
-	ConVars.Set("sv_cheats", ConVarsSDK.GetBoolean("sv_cheats", false) || svCheats.value)
-
+	ConVarsSDK.Set(
+		"sv_cheats",
+		ConVarsSDK.GetBoolean("sv_cheats", false) || svCheats.value
+	)
 	const players = PlayerCustomData.Array.filter(x => x.SteamID !== 0n)
 	if (players.length === 1) {
 		GameState.ExecuteCommand(
@@ -83,23 +85,24 @@ const creepsNoSpawn = svCheatsMenu.AddToggle(
 )
 creepsNoSpawn.OnValue(setConVar)
 
-svCheatsMenu.AddKeybind("All vision", "", "dota_all_vision").OnRelease(() => {
-	GameState.ExecuteCommand(
-		!ConVarsSDK.GetBoolean("dota_all_vision", false)
-			? "dota_all_vision_enable"
-			: "dota_all_vision_disable"
+svCheatsMenu
+	.AddKeybind("All vision", "", "dota_all_vision")
+	.OnRelease(() =>
+		ConVarsSDK.Set(
+			"dota_all_vision",
+			!ConVarsSDK.GetBoolean("dota_all_vision", false)
+		)
 	)
-})
 
 const timeScale = svCheatsMenu.AddSlider("Time Scale (n)", 1, 1, 10, 1)
 
 svCheatsMenu
 	.AddKeybind("Time Scale (slider)", "", "host_timescale")
-	.OnRelease(() => ConVars.Set("host_timescale", timeScale.value))
+	.OnRelease(() => ConVarsSDK.Set("host_timescale", timeScale.value))
 
 svCheatsMenu
 	.AddKeybind("Time Scale (normal)", "", "host_timescale")
-	.OnRelease(() => ConVars.Set("host_timescale", 1))
+	.OnRelease(() => ConVarsSDK.Set("host_timescale", 1))
 
 svCheatsMenu.AddKeybind("Refresh", "", "dota_hero_refresh").OnRelease(exec)
 
@@ -236,7 +239,9 @@ EventsSDK.on("PostDataUpdate", () => {
 		for (let i = countCreeps.value; i--; ) {
 			GameState.ExecuteCommand(
 				`dota_create_unit npc_dota_creep_${
-					LocalPlayer?.Team ?? Team.Dire === Team.Dire ? "badguys" : "goodguys"
+					(LocalPlayer?.Team ?? Team.Dire === Team.Dire)
+						? "badguys"
+						: "goodguys"
 				}_${creepsType.SelectedID === 0 ? "melee" : "ranged"} ${creepTypeName}`
 			)
 		}
