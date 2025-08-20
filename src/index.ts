@@ -1,5 +1,4 @@
 import {
-	BitsExtensions,
 	Color,
 	ConVarsSDK,
 	DOTAGameState,
@@ -283,9 +282,14 @@ EventsSDK.on("Draw", () => {
 		)
 	}
 
-	if (renderGNV.value && GridNav !== undefined && LocalPlayer?.Hero !== undefined) {
-		const gridPos = GridNav.GetGridPosForPos(Vector2.FromVector3(Input.CursorOnWorld))
-
+	const absPos = Input.CursorOnWorld
+	if (
+		renderGNV.value &&
+		GridNav !== undefined &&
+		GridNav.IsInWorld(absPos) &&
+		LocalPlayer?.Hero !== undefined
+	) {
+		const gridPos = GridNav.GetGridPosForPos(Vector2.FromVector3(absPos))
 		for (let i = -10; i < 10; i++) {
 			for (let j = -10; j < 10; j++) {
 				const x = gridPos.x + i
@@ -297,7 +301,7 @@ EventsSDK.on("Draw", () => {
 				rect.pos1.AddScalarForThis(1)
 				rect.pos2.SubtractScalarForThis(1)
 
-				if (BitsExtensions.HasBit(flags, GridNavCellFlags.Walkable)) {
+				if (flags.hasBit(GridNavCellFlags.Walkable)) {
 					GetRectPolygon(rect).Draw(
 						baseKey + currentKey++,
 						LocalPlayer.Hero,
@@ -314,7 +318,24 @@ EventsSDK.on("Draw", () => {
 				rect.pos1.AddScalarForThis(5)
 				rect.pos2.SubtractScalarForThis(5)
 
-				if (BitsExtensions.HasBit(flags, GridNavCellFlags.Tree)) {
+				if (flags.hasBit(GridNavCellFlags.UnitBlocking)) {
+					GetRectPolygon(rect).Draw(
+						baseKey + currentKey++,
+						LocalPlayer.Hero,
+						GNVParticleManager,
+						Color.Aqua
+					)
+				} else {
+					GetRectPolygon(rect).Destroy(
+						baseKey + currentKey++,
+						GNVParticleManager
+					)
+				}
+
+				rect.pos1.AddScalarForThis(5)
+				rect.pos2.SubtractScalarForThis(5)
+
+				if (flags.hasBit(GridNavCellFlags.Tree)) {
 					GetRectPolygon(rect).Draw(
 						baseKey + currentKey++,
 						LocalPlayer.Hero,
@@ -331,7 +352,7 @@ EventsSDK.on("Draw", () => {
 				rect.pos1.AddScalarForThis(5)
 				rect.pos2.SubtractScalarForThis(5)
 
-				if (BitsExtensions.HasBit(flags, GridNavCellFlags.MovementBlocker)) {
+				if (flags.hasBit(GridNavCellFlags.MovementBlocker)) {
 					GetRectPolygon(rect).Draw(
 						baseKey + currentKey++,
 						LocalPlayer.Hero,
@@ -348,7 +369,7 @@ EventsSDK.on("Draw", () => {
 				rect.pos1.AddScalarForThis(5)
 				rect.pos2.SubtractScalarForThis(5)
 
-				if (BitsExtensions.HasBit(flags, GridNavCellFlags.InteractionBlocker)) {
+				if (flags.hasBit(GridNavCellFlags.InteractionBlocker)) {
 					GetRectPolygon(rect).Draw(
 						baseKey + currentKey++,
 						LocalPlayer.Hero,
