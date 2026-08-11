@@ -1,31 +1,3 @@
-import {
-	Color,
-	ConVarsSDK,
-	DOTAGameState,
-	DOTAGameUIState,
-	EventsSDK,
-	ExecuteOrder,
-	GameRules,
-	GameSleeper,
-	GameState,
-	GetPositionHeight,
-	GridNav,
-	GridNavCellFlags,
-	GUIInfo,
-	Input,
-	LocalPlayer,
-	Menu,
-	ParticlesSDK,
-	PlayerCustomData,
-	ProjectileManager,
-	Rectangle,
-	RendererSDK,
-	Team,
-	Utils,
-	Vector2,
-	Vector3,
-	WorldPolygon
-} from "github.com/octarine-public/wrapper/index"
 
 // for scripts
 const globalThisAny = globalThis as any
@@ -151,10 +123,10 @@ humanizerMenu
 
 const canBeDown = () => {
 	return (
-		GameRules !== undefined &&
+		Dota2SDK.GameRules !== undefined &&
 		GameState.UIState === DOTAGameUIState.DOTA_GAME_UI_DOTA_INGAME &&
-		GameRules.GameState > DOTAGameState.DOTA_GAMERULES_STATE_HERO_SELECTION &&
-		GameRules.GameState < DOTAGameState.DOTA_GAMERULES_STATE_POST_GAME
+		Dota2SDK.GameRules.GameState > DOTAGameState.DOTA_GAMERULES_STATE_HERO_SELECTION &&
+		Dota2SDK.GameRules.GameState < DOTAGameState.DOTA_GAMERULES_STATE_POST_GAME
 	)
 }
 
@@ -199,7 +171,7 @@ treeCreeps.AddKeybind("Key").OnRelease(() => {
 })
 
 EventsSDK.on("PostDataUpdate", () => {
-	if (GameRules === undefined || !GameState.IsConnected) {
+	if (Dota2SDK.GameRules === undefined || !GameState.IsConnected) {
 		return
 	}
 
@@ -238,7 +210,7 @@ EventsSDK.on("PostDataUpdate", () => {
 		for (let i = countCreeps.value; i--; ) {
 			GameState.ExecuteCommand(
 				`dota_create_unit npc_dota_creep_${
-					(LocalPlayer?.Team ?? Team.Dire === Team.Dire)
+					(Dota2SDK.LocalPlayer?.Team ?? Team.Dire === Team.Dire)
 						? "badguys"
 						: "goodguys"
 				}_${creepsType.SelectedID === 0 ? "melee" : "ranged"} ${creepTypeName}`
@@ -256,17 +228,17 @@ function GetRectPolygon(rect: Rectangle): WorldPolygon {
 		pos3 = rect.pos2,
 		pos4 = new Vector2(rect.pos2.x, rect.pos1.y)
 	return new WorldPolygon(
-		Vector3.FromVector2(pos1).SetZ(GetPositionHeight(pos1)),
-		Vector3.FromVector2(pos2).SetZ(GetPositionHeight(pos2)),
-		Vector3.FromVector2(pos3).SetZ(GetPositionHeight(pos3)),
-		Vector3.FromVector2(pos4).SetZ(GetPositionHeight(pos4))
+		Vector3.FromVector2(pos1).SetZ(Dota2SDK.GetPositionHeight(pos1)),
+		Vector3.FromVector2(pos2).SetZ(Dota2SDK.GetPositionHeight(pos2)),
+		Vector3.FromVector2(pos3).SetZ(Dota2SDK.GetPositionHeight(pos3)),
+		Vector3.FromVector2(pos4).SetZ(Dota2SDK.GetPositionHeight(pos4))
 	)
 }
 
 const GNVParticleManager = new ParticlesSDK()
 EventsSDK.on("Draw", () => {
 	if (renderV3cursor.value) {
-		const curPos = Input.CursorOnWorld
+		const curPos = InputManager.CursorOnWorld
 		const position = RendererSDK.WorldToScreen(curPos)
 		if (position !== undefined) {
 			RendererSDK.TextAroundMouse(`${curPos.toArray().map(x => Math.floor(x))}`)
@@ -274,7 +246,7 @@ EventsSDK.on("Draw", () => {
 	}
 
 	if (screenCursor.value) {
-		const curPos = Input.CursorOnScreen
+		const curPos = InputManager.CursorOnScreen
 		RendererSDK.TextAroundMouse(
 			`${curPos.toArray().map(x => Math.floor(x))}`,
 			undefined,
@@ -282,12 +254,12 @@ EventsSDK.on("Draw", () => {
 		)
 	}
 
-	const absPos = Input.CursorOnWorld
+	const absPos = InputManager.CursorOnWorld
 	if (
 		renderGNV.value &&
 		GridNav !== undefined &&
 		GridNav.IsInWorld(absPos) &&
-		LocalPlayer?.Hero !== undefined
+		Dota2SDK.LocalPlayer?.Hero !== undefined
 	) {
 		const gridPos = GridNav.GetGridPosForPos(Vector2.FromVector3(absPos))
 		for (let i = -10; i < 10; i++) {
@@ -304,7 +276,7 @@ EventsSDK.on("Draw", () => {
 				if (flags.hasBit(GridNavCellFlags.Walkable)) {
 					GetRectPolygon(rect).Draw(
 						baseKey + currentKey++,
-						LocalPlayer.Hero,
+						Dota2SDK.LocalPlayer.Hero,
 						GNVParticleManager,
 						Color.Green
 					)
@@ -321,7 +293,7 @@ EventsSDK.on("Draw", () => {
 				if (flags.hasBit(GridNavCellFlags.UnitBlocking)) {
 					GetRectPolygon(rect).Draw(
 						baseKey + currentKey++,
-						LocalPlayer.Hero,
+						Dota2SDK.LocalPlayer.Hero,
 						GNVParticleManager,
 						Color.Aqua
 					)
@@ -338,7 +310,7 @@ EventsSDK.on("Draw", () => {
 				if (flags.hasBit(GridNavCellFlags.Tree)) {
 					GetRectPolygon(rect).Draw(
 						baseKey + currentKey++,
-						LocalPlayer.Hero,
+						Dota2SDK.LocalPlayer.Hero,
 						GNVParticleManager,
 						Color.Orange
 					)
@@ -355,7 +327,7 @@ EventsSDK.on("Draw", () => {
 				if (flags.hasBit(GridNavCellFlags.MovementBlocker)) {
 					GetRectPolygon(rect).Draw(
 						baseKey + currentKey++,
-						LocalPlayer.Hero,
+						Dota2SDK.LocalPlayer.Hero,
 						GNVParticleManager,
 						Color.Red
 					)
@@ -372,7 +344,7 @@ EventsSDK.on("Draw", () => {
 				if (flags.hasBit(GridNavCellFlags.InteractionBlocker)) {
 					GetRectPolygon(rect).Draw(
 						baseKey + currentKey++,
-						LocalPlayer.Hero,
+						Dota2SDK.LocalPlayer.Hero,
 						GNVParticleManager,
 						Color.Fuchsia
 					)
@@ -442,7 +414,7 @@ EventsSDK.on("ServerInfo", obj => {
 	if (!debugEvents.value) {
 		return
 	}
-	SafeLog("ServerInfo", Utils.MapToObject(obj))
+	SafeLog("ServerInfo", SharedSDK.MapToObject(obj))
 })
 
 EventsSDK.on("ParticleCreated", par => {
