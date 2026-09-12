@@ -1,5 +1,5 @@
+import { canvas } from "../render"
 
-// for scripts
 const globalThisAny = globalThis as any
 globalThisAny.DEBUGGER_INSTALLED = true
 
@@ -27,7 +27,6 @@ const debuggerMenu = Menu.AddEntry(
 	"Debugger",
 	"panorama/images/plus/achievements/mvp_icon_png.vtex_c"
 )
-// debuggerMenu.IsHidden = (globalThis as any).DEBUGER_ENABLE ?? true
 
 debuggerMenu
 	.AddToggle("Debug GUIInfo", false)
@@ -125,7 +124,8 @@ const canBeDown = () => {
 	return (
 		Dota2SDK.GameRules !== undefined &&
 		GameState.UIState === DOTAGameUIState.DOTA_GAME_UI_DOTA_INGAME &&
-		Dota2SDK.GameRules.GameState > DOTAGameState.DOTA_GAMERULES_STATE_HERO_SELECTION &&
+		Dota2SDK.GameRules.GameState >
+			DOTAGameState.DOTA_GAMERULES_STATE_HERO_SELECTION &&
 		Dota2SDK.GameRules.GameState < DOTAGameState.DOTA_GAMERULES_STATE_POST_GAME
 	)
 }
@@ -241,17 +241,19 @@ EventsSDK.on("Draw", () => {
 		const curPos = InputManager.CursorOnWorld
 		const position = RendererSDK.WorldToScreen(curPos)
 		if (position !== undefined) {
-			RendererSDK.TextAroundMouse(`${curPos.toArray().map(x => Math.floor(x))}`)
+			canvas.CursorText(`${curPos.toArray().map(x => Math.floor(x))}`, {
+				color: Color.Yellow,
+				size: 30 + 4
+			})
 		}
 	}
 
 	if (screenCursor.value) {
 		const curPos = InputManager.CursorOnScreen
-		RendererSDK.TextAroundMouse(
-			`${curPos.toArray().map(x => Math.floor(x))}`,
-			undefined,
-			Color.White
-		)
+		canvas.CursorText(`${curPos.toArray().map(x => Math.floor(x))}`, {
+			color: Color.White,
+			size: 30 + 4
+		})
 	}
 
 	const absPos = InputManager.CursorOnWorld
@@ -373,22 +375,18 @@ EventsSDK.on("Draw", () => {
 		if (w2s === undefined) {
 			return
 		}
-		RendererSDK.FilledRect(
-			w2s.SubtractForThis(new Vector2(10, 10)),
-			new Vector2(20, 20),
-			new Color(0, 255)
-		)
+		canvas.Rect(w2s.SubtractForThis(new Vector2(10, 10)), new Vector2(20, 20), {
+			color: new Color(0, 255)
+		})
 	})
 	ProjectileManager.AllLinearProjectiles.forEach(proj => {
 		const w2s = RendererSDK.WorldToScreen(proj.Position)
 		if (w2s === undefined) {
 			return
 		}
-		RendererSDK.FilledRect(
-			w2s.SubtractForThis(new Vector2(10, 10)),
-			new Vector2(20, 20),
-			new Color(255)
-		)
+		canvas.Rect(w2s.SubtractForThis(new Vector2(10, 10)), new Vector2(20, 20), {
+			color: new Color(255)
+		})
 	})
 })
 
