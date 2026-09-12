@@ -35,5 +35,9 @@
 		"directory": "/",
 		"url": "https://github.com/octarine-public/debugger.git"
 	},
-	"dependencies": {}
+	"dependencies": {},
+	"octarineBundle": true,
+	"octarineMinimize": true,
+	"octarineObfuscate": true,
+	"octarineTreeShaking": true
 }
