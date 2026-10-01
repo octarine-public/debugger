@@ -71,6 +71,11 @@ declare namespace MenuSDK {
 	 */
 	function CopyPresetSettings(entry: PresetsEntry, fromIndex: number, toIndex: number): void
 	function RemovePreset(entry: PresetsEntry, index: number): void
+	/**
+	 * Moves a preset to another place in the list. The base preset stays first, so neither index may
+	 * be 0, and the selection stays on the preset it was on wherever that one lands.
+	 */
+	function MovePreset(entry: PresetsEntry, from: number, to: number): void
 	/** Renames a preset; an empty name or one another preset already carries is ignored. */
 	function RenamePreset(entry: PresetsEntry, index: number, name: string): void
 	/**
@@ -122,6 +127,8 @@ declare namespace MenuSDK {
 	function RemoveEntryHotkey(entry: DriverHolder, hotkey: EntryHotkey): void
 	function SetEntryHotkeyBind(hotkey: EntryHotkey, bind: number): void
 	function SetEntryHotkeyMode(hotkey: EntryHotkey, mode: HotkeyMode): void
+	/** Sets whether this hotkey blocks game input on subsequent presses. */
+	function SetEntryHotkeyClaimsKey(hotkey: EntryHotkey, value: boolean): void
 	/**
 	 * Stores the value a driver — a hotkey or a logic rule — holds its entry at. A slider's value
 	 * is clamped and rounded like the slider itself; dropdown and multiselect values must name
@@ -177,6 +184,8 @@ declare namespace MenuSDK {
 	function SetMultiSelectValues(entry: MultiSelectEntry, values: string[]): void
 	/** Sets the saved hotkeys-panel visibility preference without changing key handling. */
 	function SetKeybindHotkeysHidden(entry: KeybindEntry, hidden: boolean): void
+	/** Saves whether this bind blocks game input, without changing an ongoing press. */
+	function SetKeybindClaimsKey(entry: KeybindEntry, value: boolean): void
 	function SetKeybindValue(entry: KeybindEntry, key: number): void
 	/**
 	 * What a picker is showing right now: the colour it holds, or the live one it
@@ -338,6 +347,12 @@ declare namespace MenuSDK {
 	function ReleaseEntryDriver(entry: DriverHolder, driver: EntryDriver): void
 	function SetFocusedText(entry: Nullable<TextEntry>): void
 	function FocusedText(): Nullable<TextEntry>
+	/**
+	 * A detached text entry that stands for a raw `<input>` owned by no menu row. Hand it to
+	 * {@link SetFocusedText} while the input holds focus: the host routes key presses (Enter,
+	 * Escape, Backspace, arrows) to the document only while some text field counts as focused.
+	 */
+	function FocusMarker(): TextEntry
 	function SetPanicMode(value: boolean): void
 	function IsPanicMode(): boolean
 	/**

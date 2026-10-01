@@ -5,6 +5,7 @@ declare namespace MenuSDK {
 		AccentMuted: string
 		AccentSurface: string
 		PopoverBg: string
+		WindowBlur: string
 		AccentA6: string
 		AccentA15: string
 		AccentA25: string
@@ -34,6 +35,8 @@ declare namespace MenuSDK {
 		TextControl: string
 		TextDisabled: string
 		TextTooltip: string
+		TextHeading: string
+		TextValue: string
 		SwitchOff: string
 		Knob: string
 		SliderTrack: string

@@ -81,6 +81,16 @@ declare class Entity implements INativeEntity {
 	/** @private NOTE: this is internal field */
 	public Properties_: EntityPropertiesNode
 	/**
+	 * @private NOTE: this is internal field
+	 *
+	 * Whether where this entity stands still has to be worked out. A move arrives as several
+	 * fields of one update - the cell and the offset in it per axis, the rotation - and each
+	 * one walked the entity's whole hierarchy again, a transform per node, for the same place.
+	 * A field that moves the entity raises this, and the walk happens once, when the update is
+	 * done with.
+	 */
+	public PositionsStale_: boolean
+	/**
 	 * @deprecated use IsHideWorldHud
 	 */
 	public get HideHud(): boolean
@@ -146,6 +156,13 @@ declare class Entity implements INativeEntity {
 	public UpdatePositions(parentTransform?: Matrix3x4): void
 	public CannotUseItem(_item: Item): boolean
 	public toString(): string
+	/**
+	 * Recomputes the networked position from the body fields the game last sent, for after
+	 * something else wrote it: a respawn point put on a hero the game keeps networking, a unit
+	 * back in sight. The fields only reach their handlers when they change, so a standing unit
+	 * would keep the written position until it moves.
+	 */
+	public RefreshPositionFromFields(): void
 	public SetPosition(position: Vector3): void
 	public SetAngles(qAngle: QAngle): void
 }

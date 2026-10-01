@@ -26,6 +26,10 @@ declare namespace Menu {
 		IsLoadingConfig: boolean
 		DrawMarksNew: boolean
 		DrawMarksNonDefault: boolean
+		KeepOriginalLogoColor: boolean
+		LogoColor: Nullable<string>
+		LogoSecondColor: Nullable<string>
+		WordmarkColor: Nullable<string>
 		HoverAnimation: boolean
 		IntroAnimation: boolean
 		MenuOpenAnimation: boolean
@@ -58,7 +62,7 @@ declare namespace Menu {
 	const Localization: MenuSDK.CLocalization
 	const MenuManager: MenuSDK.CMenuManager
 	const Theme: MenuSDK.CTheme
-	const ThemePresets: Map<string, MenuSDK.IThemeSeeds>
+	const ThemePresets: readonly MenuSDK.IThemePreset[]
 	const DefaultSeeds: MenuSDK.IThemeSeeds
 	const PaletteGroups: MenuSDK.IPaletteGroup[]
 	const PaletteTokenNames: Record<MenuSDK.PaletteColorToken, string>
@@ -107,7 +111,6 @@ declare namespace Menu {
 		readonly Expand: "menu/ui/expand.svg"
 		readonly EyeOff: "menu/ui/eye-off.svg"
 		readonly Files: "menu/ui/files.svg"
-		readonly ListFilter: "menu/ui/list-filter.svg"
 		readonly GlassEdge: "menu/ui/glass-edge.svg"
 		readonly Globe: "menu/ui/globe.svg"
 		readonly GlobeSolid: "menu/ui/globe-solid.svg"
@@ -130,6 +133,7 @@ declare namespace Menu {
 		readonly LevelBars: "menu/ui/level-bars.svg"
 		readonly Lighting: "menu/ui/lighting.svg"
 		readonly ListBullet: "menu/ui/list-bullet.svg"
+		readonly ListFilter: "menu/ui/list-filter.svg"
 		readonly ListSplit: "menu/ui/list-split.svg"
 		readonly LockArea: "menu/ui/lock-area.svg"
 		readonly LockKeyhole: "menu/ui/lock-keyhole.svg"

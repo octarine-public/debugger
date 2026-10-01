@@ -2,6 +2,17 @@
 declare namespace MenuSDK {
 	interface MenuHost {
 		readonly onFrame?: (tick: () => void) => void
+		/**
+		 * The host's retained draw pass, run at a tick's rate rather than every frame: `begin` goes
+		 * before the first listener of a pass and `end` after the last, both before the frame's own
+		 * tick. A HUD surface drawn between the two keeps what it drew until the next pass, where one
+		 * drawn every frame is wiped by any frame that does not draw it. The pass is for what stands on
+		 * the screen; anything placed from a world position is drawn every frame, or it trails the
+		 * camera. A host without one has every surface drawn per frame.
+		 */
+		readonly onRetainedPass?: (begin: () => void, end: () => void) => void
+		/** Runs the retained pass on the next frame, for what a user is moving by hand. */
+		readonly requestRetainedPass?: () => void
 		readonly onTeardown?: (teardown: () => void) => void
 		readonly onServerInfo?: (handler: () => void) => void
 		readonly onKeyDown?: (handler: (code: number) => boolean) => void
@@ -14,6 +25,12 @@ declare namespace MenuSDK {
 		readonly viewport?: () => [number, number]
 		readonly resolveAsset?: (path: string) => string
 		readonly resolveImage?: (value: string) => string
+		/**
+		 * Whether `path` is art whose shape is its alpha alone, to be loaded white on alpha. A game's
+		 * ability icons are such silhouettes, and the colour under them is whatever each source file
+		 * held; a host that does not answer loads every image as it is.
+		 */
+		readonly monochromeArt?: (path: string) => boolean
 		/**
 		 * The hero behind an ability name, where the name is a hero's own ability rather than an
 		 * item: the hero's data name — {@link MenuHost.resolveImage} turns it into their portrait —
@@ -100,6 +117,13 @@ declare namespace MenuSDK {
 	function HostMeasureText(text: string, font: string, sizePx: number, weight: number, italic?: boolean): Nullable<[number, number]>
 	/** Image size in px, cached like HostMeasureText. */
 	function HostImageSize(path: string): Nullable<[number, number]>
+	/**
+	 * Whether the host has a source decoded and in hand, asked afresh every time: a sized copy is
+	 * cut in the background after it is minted, and this is what says the cut is done. Nothing is
+	 * cached and no measure miss is noted - the answer is expected to change, and the next frame is
+	 * the time to ask again. A host that cannot say is taken at its word that the source is ready.
+	 */
+	function HostImageReady(path: string): boolean
 	function HostInGame(): boolean
 	function HostInputCaptured(): boolean
 	/** Seconds on the match clock; see {@link MenuHost.gameTime}. */
@@ -213,6 +237,8 @@ declare namespace MenuSDK {
 		Clip?(): Nullable<string>
 		/** The elements drawn over the stage, as structure — the frame pass positions them. */
 		Stage(): React.ReactNode
+		/** Whether stage elements may extend beyond the preview. Defaults to hidden. */
+		readonly Overflow?: "visible" | "hidden"
 		Header?(): React.ReactNode
 		Footer?(): React.ReactNode
 		/** Frame pass over the stage, in its own pixels. */

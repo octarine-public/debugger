@@ -2,6 +2,13 @@
 interface EventsMap {
 	Draw: []
 	PreDraw: []
+	/**
+	 * A draw pass at the server's tick rate rather than the frame rate, on a frame that is not
+	 * carrying a server tick, just before `PreDraw`. What an overlay draws here stays on screen
+	 * until its next pass: a reading that only changes with the game state costs a tick's worth
+	 * of work instead of a frame's, and none of it lands on the frames a tick already makes slow.
+	 */
+	Draw2D: []
 	PreDataUpdate: []
 	PostDataUpdate: [dt: number]
 	GameStarted: []
@@ -187,6 +194,16 @@ interface EventsMap {
 	UnitPortalChanged: [model: UnitPortalData]
 	UnitPortalDestroyed: [model: UnitPortalData]
 	StockInfoChanged: [stock: StockInfo]
+	/**
+	 * Emitted in PreDraw when a HUD panel read during the previous frame came out at a
+	 * different place or size — the HUD was rebuilt, the selection changed, the window was
+	 * resized, or the player moved a setting.
+	 *
+	 * Only panels something actually read are watched, so a script that never asks about the
+	 * shop is never woken by it. Ask a single panel with `HUDPanel.HasChanged` when you need to
+	 * know which one moved.
+	 */
+	GUIChanged: []
 }
 
 interface NativeEventsMap {

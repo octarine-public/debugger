@@ -15,6 +15,27 @@ declare namespace MenuSDK {
 	 */
 	function SdfRounded(radius: number, fill: string, borderW?: number, borderColor?: string): RmlStyle
 	/**
+	 * The radius a control is drawn at, in dp: `radius` on the theme's corner scale, or fully round -
+	 * a pill, or a circle on a square control - while the theme keeps its controls round.
+	 */
+	function ControlCornerRadius(radius: number): number
+	/**
+	 * {@link SdfRounded} for a control: a switch track and its knob, a slider's rail, fill and thumb,
+	 * a color swatch, the bar marking the selected row. It is rounded at `radius` on the theme's
+	 * corner scale like any fill, and fully round while the theme keeps its controls round.
+	 *
+	 * A round control touches its quad's edge, and a quad scaled by a transform lands on fractions
+	 * of a pixel the rasterizer cuts differently across and down - so a control that grows through
+	 * a transform passes `inset`, the pixels the quad stands out around the shape, or it flattens
+	 * into an oval as it grows.
+	 *
+	 * @example
+	 * <div style={{ width: 28, height: 18, ...SdfControl(9, Theme.AccentHex) }} />
+	 */
+	function SdfControl(radius: number, fill: string, inset?: number): RmlStyle
+	/** {@link SdfControl} with a live theme palette color, resolved at call time. */
+	function SdfControlTheme(radius: number, fill: keyof IThemePalette): RmlStyle
+	/**
 	 * The same fragment at an absolute radius, outside the theme's radius scale, and with the quad
 	 * grown by `inset` pixels on every side so the antialiased edge stays off its boundary. What is
 	 * drawn over the world keeps its own proportions — the menu's corner style is not its business —
@@ -82,6 +103,20 @@ declare namespace MenuSDK {
 	 * share. Palette-reactive, so re-apply it on render like every SDF fragment.
 	 */
 	function SdfPopoverTheme(radius: number): RmlStyle
+	/**
+	 * The same surface as glass: {@link SdfPopoverTheme}'s rim over the theme's own menu glass
+	 * instead of an opaque read of it, so the panel keeps whatever transparency the palette asks
+	 * for. A decorator cannot filter what stands behind it, and an unshaped backdrop filter frosts
+	 * a square, so the box around the fill carries the blur and the raster `border-radius` that
+	 * shapes it - the fill is the one element in, exactly as the driver flyout and the sub-settings
+	 * panel build it. Palette-reactive like every SDF fragment.
+	 *
+	 * @example
+	 * <div style={{ borderRadius: Radius, backdropFilter: Tokens.GlassBlur }}>
+	 * 	<div style={SdfPopoverGlass(Radius)}>{children}</div>
+	 * </div>
+	 */
+	function SdfPopoverGlass(radius: number): RmlStyle
 	/** SdfRounded with live theme palette colors, resolved at call time. */
 	function SdfRoundedTheme(radius: number, fill: keyof IThemePalette, borderW?: number, borderColor?: keyof IThemePalette): RmlStyle
 }
