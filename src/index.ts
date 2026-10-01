@@ -1,9 +1,18 @@
+import "./translations"
+
 import { canvas } from "../render"
+import { DebuggerIcons } from "./icons"
 
 const globalThisAny = globalThis as any
 globalThisAny.DEBUGGER_INSTALLED = true
 
-const exec = (self: Menu.Base) => GameState.ExecuteCommand(self.InternalTooltipName)
+const run = (command: string) => () => GameState.ExecuteCommand(command)
+
+/** Puts a glyph on a row and hands the row back, so a declaration stays one chain. */
+function withIcon<T extends Menu.Base>(entry: T, iconPath: string): T {
+	entry.IconPath = iconPath
+	return entry
+}
 
 function setConVar() {
 	ConVarsSDK.Set(
@@ -25,100 +34,218 @@ function setConVar() {
 
 const debuggerMenu = Menu.AddEntry(
 	"Debugger",
-	"panorama/images/plus/achievements/mvp_icon_png.vtex_c"
+	DebuggerIcons.Debugger,
+	"Tools for debugging and script development"
 )
 
-debuggerMenu
-	.AddToggle("Debug GUIInfo", false)
-	.OnValue(toggle => (GUIInfo.debugDraw = toggle.value))
+withIcon(
+	debuggerMenu.AddToggle(
+		"Debug GUIInfo",
+		false,
+		"Outlines the HUD areas scripts read from GUIInfo"
+	),
+	DebuggerIcons.GUIInfo
+).OnValue(toggle => (GUIInfo.debugDraw = toggle.value))
 
-const renderGNV = debuggerMenu.AddToggle("Debug GridNav")
+const renderGNV = withIcon(
+	debuggerMenu.AddToggle(
+		"Debug GridNav",
+		false,
+		"Navigation grid cells around the cursor:\ngreen walkable, aqua blocked by units, orange trees,\nred movement and pink interaction blockers"
+	),
+	DebuggerIcons.GridNav
+)
 
-const renderV3cursor = debuggerMenu.AddToggle("Debug world cursor position")
+const renderV3cursor = withIcon(
+	debuggerMenu.AddToggle(
+		"Debug world cursor position",
+		false,
+		"Writes the cursor's world coordinates next to it"
+	),
+	DebuggerIcons.WorldCursor
+)
 
-const screenCursor = debuggerMenu.AddToggle("Debug screen cursor position")
+const screenCursor = withIcon(
+	debuggerMenu.AddToggle(
+		"Debug screen cursor position",
+		false,
+		"Writes the cursor's screen coordinates next to it"
+	),
+	DebuggerIcons.ScreenCursor
+)
 
 const svCheatsMenu = debuggerMenu.AddNode(
 	"Concommands",
-	"panorama/images/plus/achievements/mvp_icon_png.vtex_c"
+	DebuggerIcons.Concommands,
+	"Cheat console commands for a local lobby"
 )
-const svCheats = svCheatsMenu.AddToggle("sv_cheats", false, "sv_cheats")
+const svCheats = withIcon(
+	svCheatsMenu.AddToggle(
+		"sv_cheats",
+		false,
+		"Allows cheat commands on the server (sv_cheats)"
+	),
+	DebuggerIcons.Cheats
+)
 svCheats.OnValue(setConVar)
 
-const wtf = svCheatsMenu.AddToggle("wtf", false, "dota_ability_debug")
+const wtf = withIcon(
+	svCheatsMenu.AddToggle(
+		"wtf",
+		false,
+		"Abilities and items have no cooldowns or mana costs (dota_ability_debug)"
+	),
+	DebuggerIcons.NoCooldowns
+)
 wtf.OnValue(setConVar)
 
-const creepsNoSpawn = svCheatsMenu.AddToggle(
-	"Creeps no spawning",
-	false,
-	"dota_creeps_no_spawning"
+const creepsNoSpawn = withIcon(
+	svCheatsMenu.AddToggle(
+		"Creeps no spawning",
+		false,
+		"Lane creeps stop spawning (dota_creeps_no_spawning)"
+	),
+	DebuggerIcons.CreepsNoSpawn
 )
 creepsNoSpawn.OnValue(setConVar)
 
-svCheatsMenu
-	.AddKeybind("All vision", "", "dota_all_vision")
-	.OnRelease(() =>
-		ConVarsSDK.Set(
-			"dota_all_vision",
-			!ConVarsSDK.GetBoolean("dota_all_vision", false)
-		)
-	)
+withIcon(
+	svCheatsMenu.AddKeybind(
+		"All vision",
+		"",
+		"Toggles vision over the whole map (dota_all_vision)"
+	),
+	DebuggerIcons.AllVision
+).OnRelease(() =>
+	ConVarsSDK.Set("dota_all_vision", !ConVarsSDK.GetBoolean("dota_all_vision", false))
+)
 
-const timeScale = svCheatsMenu.AddSlider("Time Scale (n)", 1, 1, 10, 1)
+const timeScale = withIcon(
+	svCheatsMenu.AddSlider(
+		"Time Scale (n)",
+		1,
+		1,
+		10,
+		1,
+		"Game speed the key below sets"
+	),
+	DebuggerIcons.TimeScale
+)
 
-svCheatsMenu
-	.AddKeybind("Time Scale (slider)", "", "host_timescale")
-	.OnRelease(() => ConVarsSDK.Set("host_timescale", timeScale.value))
+withIcon(
+	svCheatsMenu.AddKeybind(
+		"Time Scale (slider)",
+		"",
+		"Sets the game speed to the value above (host_timescale)"
+	),
+	DebuggerIcons.TimeScaleApply
+).OnRelease(() => ConVarsSDK.Set("host_timescale", timeScale.value))
 
-svCheatsMenu
-	.AddKeybind("Time Scale (normal)", "", "host_timescale")
-	.OnRelease(() => ConVarsSDK.Set("host_timescale", 1))
+withIcon(
+	svCheatsMenu.AddKeybind(
+		"Time Scale (normal)",
+		"",
+		"Puts the game speed back to normal (host_timescale 1)"
+	),
+	DebuggerIcons.TimeScaleNormal
+).OnRelease(() => ConVarsSDK.Set("host_timescale", 1))
 
-svCheatsMenu.AddKeybind("Refresh", "", "dota_hero_refresh").OnRelease(exec)
+withIcon(
+	svCheatsMenu.AddKeybind(
+		"Refresh",
+		"",
+		"Refreshes your hero's health, mana and cooldowns (dota_hero_refresh)"
+	),
+	DebuggerIcons.Refresh
+).OnRelease(run("dota_hero_refresh"))
 
-svCheatsMenu.AddButton("Local lvl max", "dota_hero_level 30").OnValue(exec)
+withIcon(
+	svCheatsMenu.AddButton(
+		"Local lvl max",
+		"Raises your hero to level 30 (dota_hero_level 30)"
+	),
+	DebuggerIcons.MaxLevel
+).OnValue(run("dota_hero_level 30"))
 
-svCheatsMenu.AddButton("Get Rapier God", "dota_rap_god").OnValue(exec)
+withIcon(
+	svCheatsMenu.AddButton(
+		"Get Rapier God",
+		"Gives your hero a Divine Rapier (dota_rap_god)"
+	),
+	DebuggerIcons.Rapier
+).OnValue(run("dota_rap_god"))
 
 const addUnitMenu = debuggerMenu.AddNode(
 	"add unit",
-	"panorama/images/spellicons/techies_focused_detonate_png.vtex_c"
+	DebuggerIcons.AddUnit,
+	"Spawns units to test against"
 )
 
-addUnitMenu
-	.AddKeybind("Add creep", "", "dota_create_unit npc_dota_creep_badguys_melee enemy")
-	.OnRelease(exec)
+withIcon(
+	addUnitMenu.AddKeybind(
+		"Add creep",
+		"",
+		"Spawns an enemy melee creep (dota_create_unit)"
+	),
+	DebuggerIcons.AddCreep
+).OnRelease(run("dota_create_unit npc_dota_creep_badguys_melee enemy"))
 
 EventsSDK.on("GameStarted", setConVar)
 
 const debugEventsMenu = debuggerMenu.AddNode(
 	"Debugging events",
-	"panorama/images/status_icons/information_psd.vtex_c",
+	DebuggerIcons.Events,
 	"Debugging native events in console"
 )
 
-const debugEvents = debugEventsMenu.AddToggle("Debugging events")
+const debugEvents = withIcon(
+	debugEventsMenu.AddToggle(
+		"Debugging events",
+		false,
+		"Logs game events, particles, sounds and modifiers to the console"
+	),
+	DebuggerIcons.State
+)
 
-const debugProjectiles = debugEventsMenu.AddToggle(
-	"Debug projectiles",
-	false,
-	"Visual only"
+const debugProjectiles = withIcon(
+	debugEventsMenu.AddToggle(
+		"Debug projectiles",
+		false,
+		"Marks tracking (green) and linear (red) projectiles on screen\nWorks while event debugging is on"
+	),
+	DebuggerIcons.Projectiles
 )
 
 const humanizerMenu = debuggerMenu.AddNode(
 	"Humanizer",
-	"panorama/images/plus/achievements/hero_challenges_icon_png.vtex_c"
+	DebuggerIcons.Humanizer,
+	"Debug switches of the order humanizer"
 )
 
-humanizerMenu
-	.AddToggle("debug_draw")
-	.OnValue(toggle => (ExecuteOrder.DebugDraw = toggle.value))
-humanizerMenu
-	.AddToggle("debug_orders")
-	.OnValue(toggle => (ExecuteOrder.DebugOrders = toggle.value))
-humanizerMenu
-	.AddToggle("unsafe_mode")
-	.OnValue(toggle => (ExecuteOrder.unsafeMode = toggle.value))
+withIcon(
+	humanizerMenu.AddToggle(
+		"debug_draw",
+		false,
+		"Draws the humanizer's camera zones and cursor targets"
+	),
+	DebuggerIcons.DebugDraw
+).OnValue(toggle => (ExecuteOrder.DebugDraw = toggle.value))
+withIcon(
+	humanizerMenu.AddToggle(
+		"debug_orders",
+		false,
+		"Logs every order the humanizer sends to the console"
+	),
+	DebuggerIcons.DebugOrders
+).OnValue(toggle => (ExecuteOrder.DebugOrders = toggle.value))
+withIcon(
+	humanizerMenu.AddToggle(
+		"unsafe_mode",
+		false,
+		"Sends orders at once, without the humanizer"
+	),
+	DebuggerIcons.UnsafeMode
+).OnValue(toggle => (ExecuteOrder.unsafeMode = toggle.value))
 
 const canBeDown = () => {
 	return (
@@ -133,7 +260,14 @@ const canBeDown = () => {
 let pressSven = false,
 	pressSniper = false
 const sleeper = new GameSleeper()
-addUnitMenu.AddKeybind("Full sven").OnRelease(() => {
+withIcon(
+	addUnitMenu.AddKeybind(
+		"Full sven",
+		"",
+		"Spawns an enemy Sven at level 30 with Hearts of Tarrasque"
+	),
+	DebuggerIcons.FullSven
+).OnRelease(() => {
 	if (canBeDown()) {
 		GameState.ExecuteCommand("dota_create_unit npc_dota_hero_sven enemy")
 		pressSven = true
@@ -144,7 +278,14 @@ addUnitMenu.AddKeybind("Full sven").OnRelease(() => {
 	sleeper.FullReset()
 })
 
-addUnitMenu.AddKeybind("Full sniper").OnRelease(() => {
+withIcon(
+	addUnitMenu.AddKeybind(
+		"Full sniper",
+		"",
+		"Spawns an enemy Sniper at level 5 with Aghanim's Scepter"
+	),
+	DebuggerIcons.FullSniper
+).OnRelease(() => {
 	if (canBeDown()) {
 		GameState.ExecuteCommand("dota_create_unit npc_dota_hero_sniper enemy")
 		pressSniper = true
@@ -156,11 +297,27 @@ addUnitMenu.AddKeybind("Full sniper").OnRelease(() => {
 })
 
 let pressCreeps = false
-const treeCreeps = addUnitMenu.AddNode("Creeps")
-const creepsType = treeCreeps.AddDropdown("Type", ["range", "melee"])
-const creepsTeam = treeCreeps.AddDropdown("team", ["enemy", "allies", "neutral"])
-const countCreeps = treeCreeps.AddSlider("Count", 30, 1, 30)
-treeCreeps.AddKeybind("Key").OnRelease(() => {
+const treeCreeps = addUnitMenu.AddNode(
+	"Creeps",
+	DebuggerIcons.Creeps,
+	"Spawns a pack of lane creeps"
+)
+const creepsType = withIcon(
+	treeCreeps.AddDropdown("Type", ["range", "melee"]),
+	DebuggerIcons.CreepType
+)
+const creepsTeam = withIcon(
+	treeCreeps.AddDropdown("team", ["enemy", "allies", "neutral"]),
+	DebuggerIcons.Team
+)
+const countCreeps = withIcon(
+	treeCreeps.AddSlider("Count", 30, 1, 30, 0, "How many creeps to spawn"),
+	DebuggerIcons.Count
+)
+withIcon(
+	treeCreeps.AddKeybind("Key", "", "Spawns the creeps"),
+	DebuggerIcons.Key
+).OnRelease(() => {
 	if (canBeDown()) {
 		pressCreeps = true
 		sleeper.Sleep(1000 + GameState.Ping / 2, "addCreeps")

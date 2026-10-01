@@ -1,0 +1,22 @@
+{
+	"Concommands": "Console commands",
+	"sv_cheats": "Cheats",
+	"wtf": "No cooldowns",
+	"Time Scale (n)": "Time scale",
+	"Time Scale (slider)": "Apply time scale",
+	"Time Scale (normal)": "Normal time scale",
+	"Local lvl max": "Max hero level",
+	"Get Rapier God": "Get Divine Rapier",
+	"add unit": "Add unit",
+	"Full sven": "Full Sven",
+	"Full sniper": "Full Sniper",
+	"team": "Team",
+	"range": "Ranged",
+	"melee": "Melee",
+	"enemy": "Enemy",
+	"allies": "Allies",
+	"neutral": "Neutral",
+	"debug_draw": "Debug draw",
+	"debug_orders": "Debug orders",
+	"unsafe_mode": "Unsafe mode"
+}
