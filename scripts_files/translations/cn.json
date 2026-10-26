@@ -60,7 +60,7 @@
 	"Humanizer": "人性化者",
 	"Debug switches of the order humanizer": "指令人性化者的调试开关",
 	"debug_draw": "调试绘制",
-	"Draws the humanizer's camera zones and cursor targets": "绘制人性化者的镜头区域和光标目标",
+	"Draws the humanizer's camera zones, its cursor and target,\nand a panel of order stats: rate, tick gaps and delays": "绘制人性化者的镜头区域、光标及其目标，\n以及指令统计面板：频率、tick 间隔和延迟",
 	"debug_orders": "调试指令",
 	"Logs every order the humanizer sends to the console": "在控制台输出人性化者发送的每条指令",
 	"unsafe_mode": "不安全模式",

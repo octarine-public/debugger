@@ -60,7 +60,7 @@
 	"Humanizer": "Хуманайзер",
 	"Debug switches of the order humanizer": "Отладочные переключатели хуманайзера приказов",
 	"debug_draw": "Отладочная отрисовка",
-	"Draws the humanizer's camera zones and cursor targets": "Рисует зоны камеры и цели курсора хуманайзера",
+	"Draws the humanizer's camera zones, its cursor and target,\nand a panel of order stats: rate, tick gaps and delays": "Рисует зоны камеры хуманайзера, его курсор и цель,\nи панель статистики ордеров: частота, интервалы в тиках и задержки",
 	"debug_orders": "Отладка приказов",
 	"Logs every order the humanizer sends to the console": "Выводит в консоль каждый приказ, отправленный хуманайзером",
 	"unsafe_mode": "Небезопасный режим",

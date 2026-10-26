@@ -226,7 +226,7 @@ withIcon(
 	humanizerMenu.AddToggle(
 		"debug_draw",
 		false,
-		"Draws the humanizer's camera zones and cursor targets"
+		"Draws the humanizer's camera zones, its cursor and target,\nand a panel of order stats: rate, tick gaps and delays"
 	),
 	DebuggerIcons.DebugDraw
 ).OnValue(toggle => (ExecuteOrder.DebugDraw = toggle.value))
