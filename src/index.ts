@@ -1,7 +1,9 @@
 import "./translations"
+import "./clickDriver"
 
 import { canvas } from "../render"
 import { DebuggerIcons } from "./icons"
+import { ShowOrderMarks, ShowOrderStats } from "./orderStats"
 
 const globalThisAny = globalThis as any
 globalThisAny.DEBUGGER_INSTALLED = true
@@ -226,10 +228,26 @@ withIcon(
 	humanizerMenu.AddToggle(
 		"debug_draw",
 		false,
-		"Draws the humanizer's camera zones, its cursor and target,\nand a panel of order stats: rate, tick gaps and delays"
+		"Draws the humanizer's camera zones, its cursor and target"
 	),
 	DebuggerIcons.DebugDraw
 ).OnValue(toggle => (ExecuteOrder.DebugDraw = toggle.value))
+withIcon(
+	humanizerMenu.AddToggle(
+		"order_stats",
+		false,
+		"A panel of what the server got with each order over the last minute:\nwhether its cursor was on the target, how far off,\nand how long from the click to the order going out\nNeeds the Beta native"
+	),
+	DebuggerIcons.OrderStats
+).OnValue(toggle => ShowOrderStats(toggle.value))
+withIcon(
+	humanizerMenu.AddToggle(
+		"order_marks",
+		false,
+		"Marks each order's spot in the world: ✓ or ✗, how far the server's cursor was\nand how long from the click to the order going out\nNeeds the Beta native"
+	),
+	DebuggerIcons.OrderMarks
+).OnValue(toggle => ShowOrderMarks(toggle.value))
 withIcon(
 	humanizerMenu.AddToggle(
 		"debug_orders",

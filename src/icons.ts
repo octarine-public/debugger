@@ -37,6 +37,8 @@ export const DebuggerIcons = {
 	Projectiles: icon("rocket"),
 	Humanizer: icon("mouse-pointer-click"),
 	DebugDraw: Menu.Icons.Pencil,
+	OrderStats: Menu.Icons.LevelBars,
+	OrderMarks: Menu.Icons.CircleCheck,
 	DebugOrders: icon("list-ordered"),
 	UnsafeMode: icon("triangle-alert")
 } as const
