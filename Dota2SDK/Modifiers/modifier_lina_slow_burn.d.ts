@@ -4,4 +4,5 @@ declare class modifier_lina_slow_burn extends Modifier implements IDebuff {
 	public readonly DebuffModifierName: string
 	public GetTexturePath(): string
 	public IsDebuff(): this is IDebuff
+	public get IsPurgable(): boolean
 }

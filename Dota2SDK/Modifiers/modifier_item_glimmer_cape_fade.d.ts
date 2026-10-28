@@ -8,4 +8,6 @@ declare class modifier_item_glimmer_cape_fade extends Modifier implements IBuff,
 	public get StackCount(): number
 	public IsBuff(): this is IBuff
 	public IsShield(): this is IShield
+	protected GetMoveSpeedBonusConstant(): [number, boolean]
+	protected UpdateSpecialValues(): void
 }

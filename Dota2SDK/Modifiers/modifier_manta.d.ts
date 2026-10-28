@@ -5,4 +5,5 @@ declare class modifier_manta extends Modifier {
 	protected GetIncomingDamagePercentage(_params?: IModifierParams): [number, boolean]
 	protected GetOutgoingDamagePercentageIllusion(_params?: IModifierParams): [number, boolean]
 	protected UpdateSpecialValues(): void
+	public get IsPurgable(): boolean
 }

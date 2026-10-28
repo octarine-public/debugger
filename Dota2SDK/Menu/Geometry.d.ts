@@ -1,5 +1,14 @@
 // AUTO-GENERATED - do not edit.
 declare namespace MenuSDK {
+	/**
+	 * How far down a panel's place may be kept, in dp. A screen is 1080 dp high at a menu scale of
+	 * 100% and taller in dp as the scale drops, so this is its height at the lowest scale the
+	 * settings offer. It bounds what a config keeps; where a panel stands is held on screen as it is
+	 * drawn.
+	 */
+	const PlaceLimitY: number
+	/** How far right a panel's place may be kept, in dp: {@link PlaceLimitY} on the widest screen. */
+	const PlaceLimitX: number
 	interface ScreenRect {
 		x: number
 		y: number

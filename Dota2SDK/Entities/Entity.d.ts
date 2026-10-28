@@ -27,6 +27,13 @@ declare class Entity implements INativeEntity {
 	public ModelScale: number
 	public BecameDormantTime: number
 	public NotVisibleTime: number
+	/**
+	 * Game time the entity came into sight the last time it did: out of the fog, or into the game
+	 * seen. How long a player has had it in view is the time since.
+	 * @example
+	 * const inViewFor = GameState.RawGameTime - enemy.VisibleSince
+	 */
+	public VisibleSince: number
 	public RotationDifference: number
 	public PreviousRotationDifference: number
 	public HierarchyAttachName: number

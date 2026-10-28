@@ -6,4 +6,5 @@ declare class modifier_tusk_walrus_punch extends Modifier {
 	protected GetPreAttackBonusDamage(params?: IModifierParams): [number, boolean]
 	protected GetCriticalStrikeBonus(params?: IModifierParams): [number, boolean]
 	protected UpdateSpecialValues(): void
+	public get IsPurgable(): boolean
 }

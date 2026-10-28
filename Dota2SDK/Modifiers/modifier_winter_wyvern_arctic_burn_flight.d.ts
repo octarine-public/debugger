@@ -9,4 +9,5 @@ declare class modifier_winter_wyvern_arctic_burn_flight extends Modifier impleme
 	protected GetAttackPointConstant(): [number, boolean]
 	protected GetMoveSpeedBonusPercentage(): [number, boolean]
 	protected UpdateSpecialValues(): void
+	public get IsPurgable(): boolean
 }

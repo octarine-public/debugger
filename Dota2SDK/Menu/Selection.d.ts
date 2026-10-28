@@ -5,9 +5,22 @@ declare namespace MenuSDK {
 	 * where it stands: on the row hosting it, or on the card or page it heads.
 	 */
 	function RevealEntry(target: Entry): void
+	/**
+	 * Whether a node stands as a tab along the top of its top-level tab's General page instead of as
+	 * a page in the navigation column: a child marked `generalTab` of a top-level tab that lists its
+	 * pages there rather than laying them out inline.
+	 */
+	function IsGeneralTab(entry: Entry): boolean
+	/** The pages a top-level tab lists in the navigation column, in the order it lists them. */
+	function NavigationPages(tab: NodeEntry): NodeEntry[]
 	function NodeDepth(node: NodeEntry): number
 	function HasNodeChildren(node: NodeEntry): boolean
 	function HasVisibleControls(node: NodeEntry): boolean
+	/**
+	 * Whether a top-level tab has a General page beside its pages: rows of its own, or a general tab
+	 * to stand along the page's top.
+	 */
+	function HasGeneralPage(tab: NodeEntry): boolean
 	function NodeIsOpen(node: NodeEntry): boolean
 	function SetOpenRaw(node: NodeEntry, value: boolean): void
 	/**
@@ -36,8 +49,14 @@ declare namespace MenuSDK {
 	 */
 	function OpenPinned(node: NodeEntry): void
 	/**
-	 * The tab a page with `tabbedChildren` is showing, or nothing when it has none. A page opens on
-	 * its first tab and stays where it was left, so the answer is remembered rather than derived.
+	 * The node children a page shows as tabs, in the order it shows them: every page of a page with
+	 * `tabbedChildren`, the general tabs of a top-level tab's General page, and none on any other.
+	 */
+	function PageTabs(page: NodeEntry): NodeEntry[]
+	/**
+	 * The tab a page with `tabbedChildren`, or a top-level tab's General page, is showing, or nothing
+	 * when it has none. A page opens on its first tab and stays where it was left, so the answer is
+	 * remembered rather than derived.
 	 */
 	function ActivePageTab(page: NodeEntry): Nullable<NodeEntry>
 	function SetActivePageTab(page: NodeEntry, child: NodeEntry): void

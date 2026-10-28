@@ -98,7 +98,14 @@ interface EventsMap {
 	 */
 	EntityVisibleChanged: [entity: Entity]
 	UnitVisibleStateChanged: [data: TeamData]
+	/** Emitted when `Unit.IsInEnemySight` of a unit of the local team changes (`VisionSDK`). */
 	UnitTeamVisibilityChanged: [unit: Unit]
+	/** Emitted when a threat comes on its way (`PredictionSDK.Threats`): a cast seen, a projectile, a landing. */
+	ThreatAdded: [threat: Threat]
+	/** Emitted when a threat is over: it passed, was cancelled, or its sign let go of it. */
+	ThreatRemoved: [threat: Threat]
+	/** Emitted when a threat hurt `unit`, as the game's `entity_hurt` of its ability says. */
+	ThreatLanded: [threat: Threat, unit: Unit]
 	FakeUnitCreated: [unit: FakeUnit]
 	FakeUnitDestroyed: [unit: FakeUnit]
 	/**
@@ -117,6 +124,8 @@ interface EventsMap {
 	ParticleReleased: [particle: DotaNetworkedParticle]
 	ParticleDestroyed: [particle: DotaNetworkedParticle]
 	PrepareUnitOrders: [order: ExecuteOrder]
+	/** An order got to the game (`EOrderStage.Sent`) or never will (`EOrderStage.Dropped`). */
+	OrderStageChanged: [order: ExecuteOrder]
 	DebuggerPrepareUnitOrders: [order: ExecuteOrder, is_user_input: boolean, was_cancelled: boolean]
 	LinearProjectileCreated: [proj: LinearProjectile]
 	LinearProjectileDestroyed: [proj: LinearProjectile]
@@ -138,6 +147,15 @@ interface EventsMap {
 	UnitRemoveAllGestures: [npc: Nullable<Unit | FakeUnit>]
 	UnitFadeGesture: [npc: Nullable<Unit | FakeUnit>, activity: number]
 	GameStateChanged: [newState: DOTAGameState]
+	/**
+	 * Emitted once per flip of `GameRules.IsNight`: the regular cycle, Nightstalker's night and
+	 * temporary day or night alike. Not emitted for the value a match starts with.
+	 * @example
+	 * EventsSDK.on("DayNightChanged", isNight => {
+	 * 	console.log(isNight ? "night" : "day")
+	 * })
+	 */
+	DayNightChanged: [isNight: boolean]
 	LifeStateChanged: [ent: Entity]
 	UnitAbilitiesChanged: [ent: Unit]
 	UnitWearablesChanged: [ent: Unit]
@@ -157,7 +175,15 @@ interface EventsMap {
 	NetworkActivityChanged: [npc: Unit]
 	ModifierCreated: [mod: Modifier]
 	ModifierChanged: [mod: Modifier]
+	/**
+	 * @description Emitted when the server re-sends a modifier unchanged, which it does for every
+	 * modifier of a unit once another team gains vision of that unit
+	 */
 	ModifierChangedVBE: [mod: Modifier]
+	/**
+	 * @description Emitted at most once per tick when an allied unit becomes visible to the enemy
+	 * team, and when its visible-for-enemies debuffs change
+	 */
 	UnitVBEModifierChanged: [unit: Unit]
 	ModifierRemoved: [mod: Modifier]
 	UnitAbilityDataUpdated: []
@@ -219,4 +245,49 @@ interface NativeEventsMap {
 		rankData4: number
 	]
 	DOTAFullHeroGlobalDataUpdated: [obj: unknown]
+	/**
+	 * A move message went out (Beta native only): its `hrtime`, whether the commands are the
+	 * scripts' (false: the game's own) and the commands as the server decodes them.
+	 */
+	UserCmdSent: [time: number, own: boolean, commands: WireUserCmd[]]
+	/**
+	 * Orders went out in an ExecuteOrders message (Beta native only): its `hrtime`, the orders,
+	 * and whether the game sent them rather than the scripts.
+	 */
+	OrdersSent: [time: number, orders: WireOrder[], fromGame: boolean]
+}
+
+/** A user command as the server decodes it from a move message (`UserCmdSent`). */
+interface WireUserCmd {
+	readonly tick: number
+	/** The cursor's x on the screen, 0..511. */
+	readonly mouseX: number
+	/** The cursor's y on the screen, 0..384. */
+	readonly mouseY: number
+	readonly cameraX: number
+	readonly cameraY: number
+	/** The world point under the cursor (crosshairtrace). */
+	readonly underX: number
+	readonly underY: number
+	readonly underZ: number
+	/** The entity under the cursor. */
+	readonly weaponSelect: number
+	readonly click: number
+}
+
+/** An order as it went out in an ExecuteOrders message (`OrdersSent`). */
+interface WireOrder {
+	readonly sequence: number
+	/** Its `dotaunitorder_t`. */
+	readonly type: number
+	readonly positionX: number
+	readonly positionY: number
+	readonly positionZ: number
+	/** The target's entity index, -1 for none. */
+	readonly target: number
+	readonly ability: number
+	readonly queue: boolean
+	/** Whether this message sends it for the first time rather than again. */
+	readonly firstSend: boolean
+	readonly issuers: number[]
 }

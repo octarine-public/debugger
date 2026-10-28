@@ -6,4 +6,5 @@ declare class modifier_dominated extends Modifier {
 	protected GetPhysicalArmorBonus(): [number, boolean]
 	protected GetHealthRegenConstant(): [number, boolean]
 	protected UpdateSpecialValues(): void
+	public get IsPurgable(): boolean
 }

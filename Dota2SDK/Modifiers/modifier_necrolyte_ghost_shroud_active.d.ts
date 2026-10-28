@@ -11,5 +11,7 @@ declare class modifier_necrolyte_ghost_shroud_active extends Modifier implements
 	public PostDataUpdate(): void
 	protected GetMoveSpeedBonusConstant(): [number, boolean]
 	protected GetMagicalResistanceDecrepifyUnique(): [number, boolean]
+	protected GetAbsoluteNoDamagePhysical(): [number, boolean]
 	protected UpdateSpecialValues(): void
+	public get IsPurgable(): boolean
 }

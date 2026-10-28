@@ -3,4 +3,5 @@ declare class modifier_kunkka_ghost_ship_damage_delay extends Modifier implement
 	public readonly IsHidden = false
 	public readonly BuffModifierName: string
 	public IsBuff(): this is IBuff
+	public get IsPurgable(): boolean
 }

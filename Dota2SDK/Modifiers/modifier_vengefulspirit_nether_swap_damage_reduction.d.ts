@@ -9,5 +9,6 @@ declare class modifier_vengefulspirit_nether_swap_damage_reduction extends Modif
 	public IsBuff(): this is IBuff
 	public IsShield(): this is IShield
 	protected GetTotalConstantBlock(): [number, boolean]
+	protected GetIncomingDamagePercentage(): [number, boolean]
 	protected UpdateSpecialValues(): void
 }

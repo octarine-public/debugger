@@ -12,18 +12,36 @@ declare class CastPredictor {
 	public static ChanceOf(probability: number): EHitChance
 	public Predict(input: PredictionInput, out: PredictionOutput): PredictionOutput
 	/**
+	 * Scores a cast at `position` - where the player clicks, not a point the core picks - against
+	 * `target`, as `Predict` scores its own placement on it: the shape a cast there covers as it
+	 * lands, what stands in its way and how likely the target is inside. Nothing is moved to take
+	 * the target or more units; a line keeps its direction through the point, cut to its range,
+	 * and `out.CastPosition` stays `position`.
+	 */
+	public PredictAt(input: PredictionInput, out: PredictionOutput, target: IPredictionTarget, position: Vector3): PredictionOutput
+	/**
 	 * Fills `out.AoeTargets` with the candidates the shape covers when it lands, the target first.
 	 * Exposed for strategies that place their own shape.
 	 */
 	public CollectCovered(input: PredictionInput, out: PredictionOutput): void
 	/**
 	 * Scores the placement in `out` against `target`: impossible when the effect cannot affect
-	 * it when it lands, immobile when it cannot leave, otherwise the covered share of where it
-	 * can be by then, weighed by how it is moving — a walking unit is where its walk carries
-	 * it, a standing one where it stands — and read as a chance of hitting rather than as the
-	 * share itself, because a unit does not use all the ground it could. Exposed for strategies.
+	 * it when it lands, immobile when it cannot leave. Otherwise the unit either keeps its course -
+	 * walks on as it walks, or stands - until the effect lands, and is where the prediction has
+	 * it, or changes it and can be anywhere it reaches by then: the chance it keeps it follows
+	 * from how often it was seen to change it of late (`CourseChangeRate`), and the cast takes it
+	 * with the share of its reachable ground the effect covers. An unseen unit is weighed the same
+	 * over the time since it was last seen too, the longer out of sight the less likely it kept
+	 * its course and the more ground it can have reached; one whose course is not known since -
+	 * a hint placed it - keeps none. A projectile that stops at units hits it only if none of
+	 * them turns into its way first (`clearOfOthers`). Exposed for strategies.
 	 */
 	public Evaluate(input: PredictionInput, out: PredictionOutput, target: IPredictionTarget): void
 	/** Whether the placement in `out` still covers a unit of hull `hull` standing at `position`. */
 	public Covers(out: PredictionOutput, position: Vector3, hull: number): boolean
+	/**
+	 * Whether `placed` - a cast already on its way - still flies clear to its target as `input`
+	 * sees the world now: nothing it stops at comes first along its own line.
+	 */
+	public Clear(input: PredictionInput, placed: PredictionOutput): boolean
 }

@@ -5,4 +5,5 @@ declare class modifier_kez_katana extends Modifier {
 	protected GetAttackBaseOverride(): [number, boolean]
 	protected UpdateSpecialValues(): void
 	protected GetSpecialValue(specialName: string, abilityName?: string, level?: number): number
+	public get IsPurgable(): boolean
 }

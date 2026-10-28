@@ -10,4 +10,5 @@ declare class modifier_templar_assassin_refraction_absorb extends Modifier imple
 	protected GetAvoidDamage(): [number, boolean]
 	protected GetTotalConstantBlock(): [number, boolean]
 	protected UpdateSpecialValues(): void
+	public get IsPurgable(): boolean
 }

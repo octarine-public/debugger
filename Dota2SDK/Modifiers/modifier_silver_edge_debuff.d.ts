@@ -7,4 +7,5 @@ declare class modifier_silver_edge_debuff extends Modifier implements IDebuff {
 	protected GetMoveSpeedLimit(): [number, boolean]
 	protected GetMoveSpeedMaxOverride(): [number, boolean]
 	protected UpdateSpecialValues(): void
+	public get IsPurgable(): boolean
 }

@@ -13,6 +13,15 @@ declare class UnitData {
 	public static globalStorage: Map<string, UnitData>
 	public static empty: UnitData
 	public static unitNamesSorted: string[]
+	/**
+	 * Data of the unit the ability `abilityName` summons, as the unit's data names that ability
+	 * (`UnitToAbilityMap`) - Death Ward's ward, a Serpent Ward: the first of them when it summons
+	 * several kinds.
+	 * @example
+	 * const ward = UnitData.SummonedBy("witch_doctor_death_ward")
+	 * const shotsPerSecond = ward !== undefined ? 1 / ward.BaseAttackTime : 0
+	 */
+	public static SummonedBy(abilityName: string): Nullable<UnitData>
 	public static GetUnitNameByNameIndex(index: number): Nullable<string>
 	public static GetHeroID(name: string): number
 	public static GetUnitDataByName(name: string): Nullable<UnitData>
@@ -40,8 +49,15 @@ declare class UnitData {
 	public readonly HasInventory: boolean
 	public readonly HealthBarOffset: number
 	public readonly WorkshopName: string
+	/**
+	 * Other names players know the hero by, from its data's `NameAliases` - `sf` and `nevermore`
+	 * for Shadow Fiend, `wr` and `Lyralei` for Windranger; none for a unit the data names none for.
+	 */
+	public readonly NameAliases: readonly string[]
 	public readonly AttributePrimary: Attributes
 	public readonly MovementCapabilities: DOTAUnitMoveCapability
+	/** How the unit attacks, as its data says: melee, ranged, or not at all. */
+	public readonly AttackCapabilities: DOTAUnitAttackCapability
 	public readonly ArmorPhysical: number
 	public readonly MagicalResistance: number
 	public readonly Abilities: Map<string, boolean>
@@ -49,4 +65,6 @@ declare class UnitData {
 	public readonly AttackSpeedActivityModifiers: [number, string][]
 	public readonly MovementSpeedActivityModifiers: [number, string][]
 	public readonly AttackRangeActivityModifiers: [number, string][]
+	/** Whether the unit attacks from range, as its data says - a ranged attack, directional or not. */
+	public get IsRanged(): boolean
 }

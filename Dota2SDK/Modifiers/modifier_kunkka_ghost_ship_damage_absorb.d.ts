@@ -8,5 +8,5 @@ declare class modifier_kunkka_ghost_ship_damage_absorb extends Modifier implemen
 	public IsShield(): this is IShield
 	protected GetMoveSpeedBonusPercentage(): [number, boolean]
 	protected GetIncomingDamagePercentage(): [number, boolean]
-	protected UpdateSpecialValues(): void
+	public get IsPurgable(): boolean
 }

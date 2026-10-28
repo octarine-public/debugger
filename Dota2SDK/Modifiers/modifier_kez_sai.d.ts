@@ -6,4 +6,5 @@ declare class modifier_kez_sai extends Modifier {
 	protected GetMoveSpeedBonusConstant(): [number, boolean]
 	protected UpdateSpecialValues(): void
 	protected GetSpecialValue(specialName: string, abilityName?: string, level?: number): number
+	public get IsPurgable(): boolean
 }
