@@ -273,6 +273,21 @@ interface WireUserCmd {
 	/** The entity under the cursor. */
 	readonly weaponSelect: number
 	readonly click: number
+	/** The buttons held (buttons_pb.buttonstate1..3). */
+	readonly buttons1: number
+	readonly buttons2: number
+	readonly buttons3: number
+	readonly forwardMove: number
+	readonly leftMove: number
+	readonly upMove: number
+	/** The view angles' pitch and yaw. */
+	readonly pitch: number
+	readonly yaw: number
+	readonly impulse: number
+	readonly cmdFlags: number
+	/** How many subtick moves the command carries, and every one's button or-ed. */
+	readonly subticks: number
+	readonly subtickButtons: number
 }
 
 /** An order as it went out in an ExecuteOrders message (`OrdersSent`). */
