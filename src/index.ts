@@ -1,4 +1,5 @@
 import "./translations"
+import "./cameraRecorder"
 import "./clickDriver"
 
 import { canvas } from "../render"
