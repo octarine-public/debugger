@@ -3,6 +3,13 @@ import "./cameraRecorder"
 import "./clickDriver"
 
 import { canvas } from "../render"
+import {
+	SetHeightMapCellSize,
+	SetHeightMapFloorDifference,
+	ShowHeightMapCursor,
+	ShowHeightMapFloor,
+	ShowHeightMapGrid
+} from "./heightMap"
 import { DebuggerIcons } from "./icons"
 import { ShowOrderMarks, ShowOrderStats } from "./orderStats"
 
@@ -265,6 +272,59 @@ withIcon(
 	),
 	DebuggerIcons.UnsafeMode
 ).OnValue(toggle => (ExecuteOrder.unsafeMode = toggle.value))
+
+const heightMapMenu = debuggerMenu.AddNode(
+	"Height map",
+	DebuggerIcons.HeightMap,
+	"The .vhcg height map over the visible ground"
+)
+
+withIcon(
+	heightMapMenu.AddToggle(
+		"Grid",
+		false,
+		"Lines over the visible ground, every node at the height the map gives it;\nred dots are nodes without ground, orange the ones blended with them"
+	),
+	DebuggerIcons.HeightMapGrid
+).OnValue(toggle => ShowHeightMapGrid(toggle.value))
+withIcon(
+	heightMapMenu.AddSlider(
+		"Cell size",
+		32,
+		16,
+		512,
+		0,
+		"Side of a grid square in world units, aligned to the height map's corner;\na height map cell is 128 and holds a sample every 32"
+	),
+	DebuggerIcons.CellSize
+).OnValue(slider => SetHeightMapCellSize(slider.value))
+withIcon(
+	heightMapMenu.AddToggle(
+		"Cursor cell",
+		false,
+		"The square under the cursor and the height there"
+	),
+	DebuggerIcons.CursorCell
+).OnValue(toggle => ShowHeightMapCursor(toggle.value))
+withIcon(
+	heightMapMenu.AddToggle(
+		"World floor",
+		true,
+		"Where the world's physics floor, which clicks land on, leaves the height map:\na magenta grid at the floor's height over those nodes"
+	),
+	DebuggerIcons.WorldFloor
+).OnValue(toggle => ShowHeightMapFloor(toggle.value))
+withIcon(
+	heightMapMenu.AddSlider(
+		"Floor difference",
+		8,
+		1,
+		256,
+		0,
+		"How far the floor must be from the height map, in world units, to be drawn"
+	),
+	DebuggerIcons.FloorDifference
+).OnValue(slider => SetHeightMapFloorDifference(slider.value))
 
 const canBeDown = () => {
 	return (
