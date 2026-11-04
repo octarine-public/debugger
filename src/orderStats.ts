@@ -243,8 +243,33 @@ function Prune<T>(list: T[], timeOf: (entry: T) => number, cutoff: number): void
 	}
 }
 
+/** The target an order goes out with: a tree's `BinaryID`, any other entity's index. */
 function TargetIndex(target: Nullable<Entity | number>): number {
+	if (target instanceof Tree || target instanceof TempTree) {
+		return target.BinaryID
+	}
 	return target instanceof Entity ? target.Index : (target ?? -1)
+}
+
+function TreeOf(binaryID: number): Nullable<Tree | TempTree> {
+	return (
+		EntityManager.GetEntitiesByClass(Tree).find(tree => tree.BinaryID === binaryID) ??
+		EntityManager.GetEntitiesByClass(TempTree).find(
+			tree => tree.BinaryID === binaryID
+		)
+	)
+}
+
+/** The unit or tree `order` is given at: a tree order names its tree by `BinaryID`. */
+function TargetOf(order: WireOrder): Nullable<Unit | Tree | TempTree> {
+	if (order.target < 0) {
+		return undefined
+	}
+	if (order.type === dotaunitorder_t.DOTA_UNIT_ORDER_CAST_TARGET_TREE) {
+		return TreeOf(order.target)
+	}
+	const unit = EntityManager.EntityByIndex(order.target)
+	return unit instanceof Unit && unit.IsValid ? unit : undefined
 }
 
 /** Takes from `list` the order `order` went out as: the same type and target, or the same point. */
@@ -295,6 +320,7 @@ function CursorPointOf(cmd: WireUserCmd): CursorPoint {
 function OnTarget(order: Outgoing, cmd: WireUserCmd, point: CursorPoint): boolean {
 	if (
 		order.target >= 0 &&
+		order.type !== dotaunitorder_t.DOTA_UNIT_ORDER_CAST_TARGET_TREE &&
 		(cmd.weaponSelect === order.target ||
 			(cmd.weaponSelect & 0x3fff) === order.target)
 	) {
@@ -426,19 +452,18 @@ Source2SDK.NativeEvents.on("OrdersSent", (time, orders, fromGame) => {
 			continue
 		}
 		const sent = Match(fromGame ? clicks : sentByScripts, order, time),
-			unit =
-				order.target >= 0 ? EntityManager.EntityByIndex(order.target) : undefined,
-			valid = unit instanceof Unit && unit.IsValid
+			target = TargetOf(order)
 		outgoing.push({
 			time,
 			owner: fromGame ? OrderOwner.Player : (sent?.owner ?? OrderOwner.Script),
 			type: order.type,
 			given: sent?.given ?? NaN,
 			target: order.target,
-			aim: valid
-				? unit.Position.Clone()
-				: new Vector3(order.positionX, order.positionY, order.positionZ),
-			hull: valid ? unit.HullRadius : 0,
+			aim:
+				target !== undefined
+					? target.Position.Clone()
+					: new Vector3(order.positionX, order.positionY, order.positionZ),
+			hull: target instanceof Unit ? target.HullRadius : 0,
 			cursors: sent?.cursors,
 			writtenX: userCmd.getFloat32(UNDER_X, true),
 			writtenY: userCmd.getFloat32(UNDER_Y, true)
