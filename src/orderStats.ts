@@ -10,6 +10,21 @@ interface Sent {
 	readonly x: number
 	readonly y: number
 	readonly cursors: Nullable<Cursors>
+	/** The order, for the humanizer's marks of it (`Cursorless`), set once it enters its queue. */
+	readonly order: ExecuteOrder
+	/** Whether, as it was given, it lay on its ability's double tap (`Ability.IsDoubleTap`). */
+	readonly tap: boolean
+}
+
+/**
+ * The humanizer's marks of an order the game gives with no cursor, `@internal` in the SDK and so
+ * out of its declarations: `Keyed` a key or the HUD gave the player's order (F3, a cast at a
+ * portrait, a Town Portal Scroll's double tap), `Tapped` a self-cast - Alt with the key or the key
+ * tapped twice (Magnetic Field ahead of Arc Warden). An SDK without them leaves them undefined.
+ */
+interface CursorlessMarks {
+	readonly Keyed?: boolean
+	readonly Tapped?: boolean
 }
 
 /** Where the player's cursor and the scripts' last written one were, on the ground, as an order was given. */
@@ -32,6 +47,8 @@ interface Outgoing {
 	readonly cursors: Nullable<Cursors>
 	readonly writtenX: number
 	readonly writtenY: number
+	/** Whether it needs no cursor (`Cursorless`): the server's cursor is not judged for it. */
+	readonly cursorless: boolean
 }
 
 /** What the server got with an order: where its cursor was and how long the order took. */
@@ -62,8 +79,9 @@ interface CursorPoint {
 
 interface Mark {
 	readonly aim: Vector3
+	/** Where the server's cursor was instead, for a miss. */
 	readonly under: Nullable<Vector3>
-	readonly ok: boolean
+	readonly color: Color
 	readonly until: number
 	readonly text: string
 }
@@ -71,6 +89,8 @@ interface Mark {
 interface Summary {
 	readonly total: number
 	readonly ok: number
+	/** Orders that need no cursor (`Cursorless`), left out of the cursor's rows. */
+	readonly cursorless: number
 	readonly distance: number[]
 	readonly reach: number[]
 	readonly never: number
@@ -144,7 +164,8 @@ const PLAYER_COLOR = new Color(110, 220, 130),
 	PANEL_COLOR = new Color(12, 14, 18, 210),
 	PANEL_BORDER = new Color(255, 255, 255, 30),
 	MISS_COLOR = new Color(255, 110, 90),
-	HIT_COLOR = new Color(110, 230, 120)
+	HIT_COLOR = new Color(110, 230, 120),
+	CURSORLESS_COLOR = new Color(120, 190, 255)
 
 const GROUPS: Group[] = [
 	{
@@ -152,11 +173,13 @@ const GROUPS: Group[] = [
 		rows: [
 			{
 				label: "On target",
-				value: s => (s.total === 0 ? "–" : `${s.ok}/${s.total}`)
+				value: s =>
+					s.total === s.cursorless ? "–" : `${s.ok}/${s.total - s.cursorless}`
 			},
 			{ label: "Off by, units: p50 / p95", value: s => Spread(s.distance) },
 			{ label: "Missed, on target after, ms", value: s => Spread(s.reach) },
-			{ label: "Missed, not on it in 1 s", value: s => `${s.never}` }
+			{ label: "Missed, not on it in 1 s", value: s => `${s.never}` },
+			{ label: "Without the cursor (key, HUD)", value: s => `${s.cursorless}` }
 		]
 	},
 	{
@@ -272,6 +295,16 @@ function TargetOf(order: WireOrder): Nullable<Unit | Tree | TempTree> {
 	return unit instanceof Unit && unit.IsValid ? unit : undefined
 }
 
+/**
+ * Whether `sent` goes with no cursor, as the game's own does: the humanizer marked it so (`Keyed`,
+ * `Tapped`) or, as it was given, it lay on its ability's double tap - the player's own with the
+ * humanizer off, which no humanizer marks.
+ */
+function Cursorless(sent: Sent): boolean {
+	const humanizer = sent.order as ExecuteOrder & CursorlessMarks
+	return sent.tap || humanizer.Keyed === true || humanizer.Tapped === true
+}
+
 /** Takes from `list` the order `order` went out as: the same type and target, or the same point. */
 function Match(list: Sent[], order: WireOrder, now: number): Nullable<Sent> {
 	Prune(list, entry => entry.at, now - MATCH_SPAN)
@@ -344,7 +377,11 @@ function Judge(order: Outgoing): void {
 	}
 	const cmd = before?.[before.length - 1],
 		point = cmd === undefined ? undefined : CursorPointOf(cmd),
-		ok = cmd !== undefined && point !== undefined && OnTarget(order, cmd, point),
+		ok =
+			!order.cursorless &&
+			cmd !== undefined &&
+			point !== undefined &&
+			OnTarget(order, cmd, point),
 		record: Judged = {
 			time: order.time,
 			owner: order.owner,
@@ -366,7 +403,7 @@ function Judge(order: Outgoing): void {
 		}
 	judged.push(record)
 	Prune(judged, entry => entry.time, order.time - SPAN)
-	if (!ok) {
+	if (!ok && !order.cursorless) {
 		following.push([record, order])
 		misses.unshift(record)
 		if (misses.length > MAX_MISSES) {
@@ -376,14 +413,15 @@ function Judge(order: Outgoing): void {
 	if (!showMarks) {
 		return
 	}
+	const missed = !ok && !order.cursorless
 	marks.push({
 		aim: order.aim,
 		under:
-			cmd === undefined || point === undefined || point.minimap
+			!missed || cmd === undefined || point === undefined || point.minimap
 				? undefined
 				: new Vector3(cmd.underX, cmd.underY, cmd.underZ),
-		ok,
-		until: hrtime() + (ok ? MARK_OK_MS : MARK_MISS_MS),
+		color: order.cursorless ? CURSORLESS_COLOR : ok ? HIT_COLOR : MISS_COLOR,
+		until: hrtime() + (missed ? MARK_MISS_MS : MARK_OK_MS),
 		text: Describe(record)
 	})
 	if (marks.length > MAX_MARKS) {
@@ -396,6 +434,9 @@ function Describe(record: Judged): string {
 		distance = Number.isNaN(record.distance) ? "?" : `${record.distance}`,
 		ms = Number.isNaN(record.clickToWire) ? "?" : `${Math.round(record.clickToWire)}`,
 		minimap = record.minimap ? ` · ${localize("minimap")}` : ""
+	if (record.order.cursorless) {
+		return `${localize("no cursor")} · ${ms} ${localize("ms")}`
+	}
 	return `${record.ok ? "✓" : "✗"} ${distance} ${localize("u")} · ${ms} ${localize("ms")}${minimap}`
 }
 
@@ -466,13 +507,15 @@ Source2SDK.NativeEvents.on("OrdersSent", (time, orders, fromGame) => {
 			hull: target instanceof Unit ? target.HullRadius : 0,
 			cursors: sent?.cursors,
 			writtenX: userCmd.getFloat32(UNDER_X, true),
-			writtenY: userCmd.getFloat32(UNDER_Y, true)
+			writtenY: userCmd.getFloat32(UNDER_Y, true),
+			cursorless: sent !== undefined && Cursorless(sent)
 		})
 	}
 })
 
 function Entry(order: ExecuteOrder, at: number): Sent {
-	const position = order.Position
+	const position = order.Position,
+		ability = order.Ability_
 	return {
 		at,
 		given: given.get(order) ?? NaN,
@@ -481,7 +524,9 @@ function Entry(order: ExecuteOrder, at: number): Sent {
 		target: TargetIndex(order.Target),
 		x: position.x,
 		y: position.y,
-		cursors: cursorsAtGiven.get(order)
+		cursors: cursorsAtGiven.get(order),
+		order,
+		tap: ability instanceof Ability && ability.IsDoubleTap(order)
 	}
 }
 
@@ -553,9 +598,17 @@ function Summarize(owner: Nullable<OrderOwner>, now: number): Summary {
 		reach: number[] = [],
 		clickToWire: number[] = []
 	let ok = 0,
-		never = 0
+		never = 0,
+		cursorless = 0
 	for (let i = 0, end = records.length; i < end; i++) {
 		const record = records[i]
+		if (!Number.isNaN(record.clickToWire)) {
+			clickToWire.push(record.clickToWire)
+		}
+		if (record.order.cursorless) {
+			cursorless++
+			continue
+		}
 		if (record.ok) {
 			ok++
 		} else if (record.reach > 0) {
@@ -566,13 +619,11 @@ function Summarize(owner: Nullable<OrderOwner>, now: number): Summary {
 		if (!Number.isNaN(record.distance)) {
 			distance.push(record.distance)
 		}
-		if (!Number.isNaN(record.clickToWire)) {
-			clickToWire.push(record.clickToWire)
-		}
 	}
 	return {
 		total: records.length,
 		ok,
+		cursorless,
 		distance,
 		reach,
 		never,
@@ -805,9 +856,9 @@ function DrawMarks(): void {
 		if (at === undefined) {
 			continue
 		}
-		const color = mark.ok ? HIT_COLOR : MISS_COLOR
+		const color = mark.color
 		canvas.Circle(at.SubtractScalar(dot / 2), dotSize, { color })
-		if (!mark.ok && mark.under !== undefined) {
+		if (mark.under !== undefined) {
 			const under = RendererSDK.WorldToScreen(mark.under)
 			if (under !== undefined) {
 				canvas.Line(at, under, color, Math.max(Math.round(2 * scale), 1))
@@ -856,6 +907,7 @@ globalThisAny.DEBUGGER_ORDER_STATS = () => ({
 		time: Math.round(record.time),
 		owner: record.owner.Name,
 		ok: record.ok,
+		cursorless: record.order.cursorless,
 		distance: record.distance,
 		minimap: record.minimap,
 		clickToWire: Math.round(record.clickToWire * 10) / 10,

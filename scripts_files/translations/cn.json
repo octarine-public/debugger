@@ -83,6 +83,7 @@
 	"Off by, units: p50 / p95": "偏差（单位）：p50 / p95",
 	"Missed, on target after, ms": "偏离后到达目标（毫秒）",
 	"Missed, not on it in 1 s": "偏离且 1 秒内未到达",
+	"Without the cursor (key, HUD)": "无需光标（按键、HUD）",
 	"Delays, ms: p50 / p95": "延迟（毫秒）：p50 / p95",
 	"Click → sent to the server": "点击 → 发送到服务器",
 	"Orders": "指令",
@@ -92,6 +93,7 @@
 	"Lost casts": "丢失的施法",
 	"Last misses": "最近的偏离",
 	"minimap": "小地图",
+	"no cursor": "无需光标",
 	"u": "单位",
 	"ms": "毫秒",
 	"s ago": "秒前"

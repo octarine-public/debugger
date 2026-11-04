@@ -83,6 +83,7 @@
 	"Off by, units: p50 / p95": "Мимо на, ед: p50 / p95",
 	"Missed, on target after, ms": "Промах, дошёл до цели за, мс",
 	"Missed, not on it in 1 s": "Промах, не дошёл за 1 с",
+	"Without the cursor (key, HUD)": "Без курсора (клавиша, HUD)",
 	"Delays, ms: p50 / p95": "Задержки, мс: p50 / p95",
 	"Click → sent to the server": "Клик → отправка на сервер",
 	"Orders": "Ордера",
@@ -92,6 +93,7 @@
 	"Lost casts": "Потерянные касты",
 	"Last misses": "Последние промахи",
 	"minimap": "миникарта",
+	"no cursor": "без курсора",
 	"u": "ед",
 	"ms": "мс",
 	"s ago": "с назад"
