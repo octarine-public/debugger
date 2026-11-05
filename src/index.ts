@@ -1,18 +1,13 @@
 import "./translations"
 
 import { canvas } from "../render"
-import { DebuggerIcons } from "./icons"
+import { DebuggerIcons, withIcon } from "./icons"
+import { CreateVisualDebug } from "./visualDebug"
 
 const globalThisAny = globalThis as any
 globalThisAny.DEBUGGER_INSTALLED = true
 
 const run = (command: string) => () => GameState.ExecuteCommand(command)
-
-/** Puts a glyph on a row and hands the row back, so a declaration stays one chain. */
-function withIcon<T extends Menu.Base>(entry: T, iconPath: string): T {
-	entry.IconPath = iconPath
-	return entry
-}
 
 function setConVar() {
 	ConVarsSDK.Set(
@@ -38,14 +33,35 @@ const debuggerMenu = Menu.AddEntry(
 	"Tools for debugging and script development"
 )
 
-withIcon(
+/**
+ * The master switch: off, every passive output of the debugger is silent - the visual debuggers,
+ * the GridNav and cursor draws, the GUIInfo outline and the console logs - and each switch keeps its
+ * own value. What fires only on a press (the console commands, the unit keys) stays apart. Its
+ * priority -1 keeps it above every other row.
+ */
+const masterState = withIcon(
+	debuggerMenu.AddToggle(
+		"Enabled",
+		true,
+		"Master switch: off, all of the debugger's output stops at once",
+		-1
+	),
+	DebuggerIcons.Master
+)
+/** Whether `toggle` is on and the master switch too: what every output reads. */
+const isOn = (toggle: Menu.Toggle) => masterState.value && toggle.value
+
+const guiInfo = withIcon(
 	debuggerMenu.AddToggle(
 		"Debug GUIInfo",
 		false,
 		"Outlines the HUD areas scripts read from GUIInfo"
 	),
 	DebuggerIcons.GUIInfo
-).OnValue(toggle => (GUIInfo.debugDraw = toggle.value))
+)
+const syncGUIInfo = () => (GUIInfo.debugDraw = isOn(guiInfo))
+guiInfo.OnValue(syncGUIInfo)
+masterState.OnValue(syncGUIInfo)
 
 const renderGNV = withIcon(
 	debuggerMenu.AddToggle(
@@ -207,13 +223,22 @@ const debugEvents = withIcon(
 	DebuggerIcons.State
 )
 
-const debugProjectiles = withIcon(
+const debugTeleports = withIcon(
 	debugEventsMenu.AddToggle(
-		"Debug projectiles",
+		"Debug teleports",
 		false,
-		"Marks tracking (green) and linear (red) projectiles on screen\nWorks while event debugging is on"
+		"Logs each unit teleport's data (start, end, ability, duration) to the console"
 	),
-	DebuggerIcons.Projectiles
+	DebuggerIcons.Teleports
+)
+
+const ignoreCreeps = withIcon(
+	debugEventsMenu.AddToggle(
+		"Ignore creeps",
+		true,
+		"Leaves creep-sourced events (damage, attacks, animations, sounds, ...) out of the console"
+	),
+	DebuggerIcons.IgnoreCreeps
 )
 
 const humanizerMenu = debuggerMenu.AddNode(
@@ -246,6 +271,8 @@ withIcon(
 	),
 	DebuggerIcons.UnsafeMode
 ).OnValue(toggle => (ExecuteOrder.unsafeMode = toggle.value))
+
+CreateVisualDebug(debuggerMenu, masterState)
 
 const canBeDown = () => {
 	return (
@@ -379,21 +406,110 @@ EventsSDK.on("PostDataUpdate", () => {
 	}
 })
 
-function GetRectPolygon(rect: Rectangle): WorldPolygon {
+function GetRectPolygon(rect: Rectangle, z: number): WorldPolygon {
 	const pos1 = rect.pos1,
 		pos2 = new Vector2(rect.pos1.x, rect.pos2.y),
 		pos3 = rect.pos2,
 		pos4 = new Vector2(rect.pos2.x, rect.pos1.y)
 	return new WorldPolygon(
-		Vector3.FromVector2(pos1).SetZ(Dota2SDK.GetPositionHeight(pos1)),
-		Vector3.FromVector2(pos2).SetZ(Dota2SDK.GetPositionHeight(pos2)),
-		Vector3.FromVector2(pos3).SetZ(Dota2SDK.GetPositionHeight(pos3)),
-		Vector3.FromVector2(pos4).SetZ(Dota2SDK.GetPositionHeight(pos4))
+		Vector3.FromVector2(pos1).SetZ(z),
+		Vector3.FromVector2(pos2).SetZ(z),
+		Vector3.FromVector2(pos3).SetZ(z),
+		Vector3.FromVector2(pos4).SetZ(z)
 	)
 }
 
 const GNVParticleManager = new ParticlesSDK()
+/**
+ * The layers of a GridNav cell, each 5 units inside the last: green walkable, aqua blocked by units,
+ * orange trees, red movement and pink interaction blockers.
+ */
+const GNVLayers: readonly [GridNavCellFlags, Color][] = [
+	[GridNavCellFlags.Walkable, Color.Green],
+	[GridNavCellFlags.UnitBlocking, Color.Aqua],
+	[GridNavCellFlags.Tree, Color.Orange],
+	[GridNavCellFlags.MovementBlocker, Color.Red],
+	[GridNavCellFlags.InteractionBlocker, Color.Fuchsia]
+]
+/** The grid cell under the cursor the GridNav overlay was last laid out around; none while it is off. */
+let lastGNVKey: Nullable<number>
+/** Game time the overlay was last laid out: the cells' units and trees change under it too. */
+let lastGNVAt = -Infinity
+/** Seconds the overlay stands before it is laid out again with the cursor in the same cell. */
+const GNVRefresh = 1
+/**
+ * The ground of each grid cell, read once: the map's ground does not change, and within a cell it
+ * is flat enough for one height to stand for all its corners and layers. Cleared as the game ends.
+ */
+const gnvHeightCache = new Map<number, number>()
+function getCellHeight(gridX: number, gridY: number, sample: Vector2): number {
+	const key = gridX * 100000 + gridY
+	let height = gnvHeightCache.get(key)
+	if (height === undefined) {
+		height = Dota2SDK.GetPositionHeight(sample)
+		gnvHeightCache.set(key, height)
+	}
+	return height
+}
+/** Takes the GridNav overlay off the screen. */
+function clearGNV() {
+	if (lastGNVKey !== undefined) {
+		GNVParticleManager.DestroyAll()
+		lastGNVKey = undefined
+	}
+}
+/**
+ * Lays the GridNav overlay out around `gridPos` when the cursor came to another cell, or a second
+ * on - the particles stay where they were drawn, and redrawing 400 cells a frame only cost frames.
+ */
+function drawGNV(gridPos: Vector2, hero: Unit) {
+	const key = gridPos.x * 100000 + gridPos.y,
+		now = GameState.RawGameTime
+	if (key === lastGNVKey && now >= lastGNVAt && now - lastGNVAt < GNVRefresh) {
+		return
+	}
+	lastGNVKey = key
+	lastGNVAt = now
+	for (let i = -10; i < 10; i++) {
+		for (let j = -10; j < 10; j++) {
+			const x = gridPos.x + i
+			const y = gridPos.y + j
+			const baseKey = `gridnav_${i}_${j}_`
+			let currentKey = 0
+			const flags = GridNav!.GetCellFlagsForGridPos(x, y)
+			const rect = GridNav!.GetRectForGridPos(x, y)
+			const z = getCellHeight(x, y, rect.pos1)
+			rect.pos1.AddScalarForThis(1)
+			rect.pos2.SubtractScalarForThis(1)
+			for (let l = 0; l < GNVLayers.length; l++) {
+				const [flag, color] = GNVLayers[l]
+				if (l !== 0) {
+					rect.pos1.AddScalarForThis(5)
+					rect.pos2.SubtractScalarForThis(5)
+				}
+				if (flags.hasBit(flag)) {
+					GetRectPolygon(rect, z).Draw(
+						baseKey + currentKey++,
+						hero,
+						GNVParticleManager,
+						color
+					)
+				} else {
+					GetRectPolygon(rect, z).Destroy(
+						baseKey + currentKey++,
+						GNVParticleManager
+					)
+				}
+			}
+		}
+	}
+}
+
 EventsSDK.on("Draw", () => {
+	if (!masterState.value) {
+		clearGNV()
+		return
+	}
 	if (renderV3cursor.value) {
 		const curPos = InputManager.CursorOnWorld
 		const position = RendererSDK.WorldToScreen(curPos)
@@ -420,131 +536,13 @@ EventsSDK.on("Draw", () => {
 		GridNav.IsInWorld(absPos) &&
 		Dota2SDK.LocalPlayer?.Hero !== undefined
 	) {
-		const gridPos = GridNav.GetGridPosForPos(Vector2.FromVector3(absPos))
-		for (let i = -10; i < 10; i++) {
-			for (let j = -10; j < 10; j++) {
-				const x = gridPos.x + i
-				const y = gridPos.y + j
-				const baseKey = `gridnav_${i}_${j}_`
-				let currentKey = 0
-				const flags = GridNav.GetCellFlagsForGridPos(x, y)
-				const rect = GridNav.GetRectForGridPos(x, y)
-				rect.pos1.AddScalarForThis(1)
-				rect.pos2.SubtractScalarForThis(1)
-
-				if (flags.hasBit(GridNavCellFlags.Walkable)) {
-					GetRectPolygon(rect).Draw(
-						baseKey + currentKey++,
-						Dota2SDK.LocalPlayer.Hero,
-						GNVParticleManager,
-						Color.Green
-					)
-				} else {
-					GetRectPolygon(rect).Destroy(
-						baseKey + currentKey++,
-						GNVParticleManager
-					)
-				}
-
-				rect.pos1.AddScalarForThis(5)
-				rect.pos2.SubtractScalarForThis(5)
-
-				if (flags.hasBit(GridNavCellFlags.UnitBlocking)) {
-					GetRectPolygon(rect).Draw(
-						baseKey + currentKey++,
-						Dota2SDK.LocalPlayer.Hero,
-						GNVParticleManager,
-						Color.Aqua
-					)
-				} else {
-					GetRectPolygon(rect).Destroy(
-						baseKey + currentKey++,
-						GNVParticleManager
-					)
-				}
-
-				rect.pos1.AddScalarForThis(5)
-				rect.pos2.SubtractScalarForThis(5)
-
-				if (flags.hasBit(GridNavCellFlags.Tree)) {
-					GetRectPolygon(rect).Draw(
-						baseKey + currentKey++,
-						Dota2SDK.LocalPlayer.Hero,
-						GNVParticleManager,
-						Color.Orange
-					)
-				} else {
-					GetRectPolygon(rect).Destroy(
-						baseKey + currentKey++,
-						GNVParticleManager
-					)
-				}
-
-				rect.pos1.AddScalarForThis(5)
-				rect.pos2.SubtractScalarForThis(5)
-
-				if (flags.hasBit(GridNavCellFlags.MovementBlocker)) {
-					GetRectPolygon(rect).Draw(
-						baseKey + currentKey++,
-						Dota2SDK.LocalPlayer.Hero,
-						GNVParticleManager,
-						Color.Red
-					)
-				} else {
-					GetRectPolygon(rect).Destroy(
-						baseKey + currentKey++,
-						GNVParticleManager
-					)
-				}
-
-				rect.pos1.AddScalarForThis(5)
-				rect.pos2.SubtractScalarForThis(5)
-
-				if (flags.hasBit(GridNavCellFlags.InteractionBlocker)) {
-					GetRectPolygon(rect).Draw(
-						baseKey + currentKey++,
-						Dota2SDK.LocalPlayer.Hero,
-						GNVParticleManager,
-						Color.Fuchsia
-					)
-				} else {
-					GetRectPolygon(rect).Destroy(
-						baseKey + currentKey++,
-						GNVParticleManager
-					)
-				}
-			}
-		}
+		drawGNV(
+			GridNav.GetGridPosForPos(Vector2.FromVector3(absPos)),
+			Dota2SDK.LocalPlayer.Hero
+		)
 	} else {
-		GNVParticleManager.DestroyAll()
+		clearGNV()
 	}
-
-	if (
-		!debugEvents.value ||
-		!debugProjectiles.value ||
-		GameState.UIState !== DOTAGameUIState.DOTA_GAME_UI_DOTA_INGAME
-	) {
-		return
-	}
-
-	ProjectileManager.AllTrackingProjectiles.forEach(proj => {
-		const w2s = RendererSDK.WorldToScreen(proj.Position)
-		if (w2s === undefined) {
-			return
-		}
-		canvas.Rect(w2s.SubtractForThis(new Vector2(10, 10)), new Vector2(20, 20), {
-			color: new Color(0, 255)
-		})
-	})
-	ProjectileManager.AllLinearProjectiles.forEach(proj => {
-		const w2s = RendererSDK.WorldToScreen(proj.Position)
-		if (w2s === undefined) {
-			return
-		}
-		canvas.Rect(w2s.SubtractForThis(new Vector2(10, 10)), new Vector2(20, 20), {
-			color: new Color(255)
-		})
-	})
 })
 
 function SafeLog(...args: any[]) {
@@ -559,21 +557,84 @@ function SafeLog(...args: any[]) {
 	)
 }
 
+/**
+ * Whether `ent` is a creep while "Ignore creeps" is on: creep combat kept out of the console so hero
+ * and teleport events read. A unit in the fog has no creep flag: its name tells.
+ */
+function isCreepNoise(ent: Nullable<Unit | FakeUnit>): boolean {
+	if (!ignoreCreeps.value || ent === undefined) {
+		return false
+	}
+	return ent instanceof Unit ? ent.IsCreep : /creep|neutral/i.test(ent.Name)
+}
+
+/** Whether a game event (entity_hurt, entity_killed, ...) names a creep while "Ignore creeps" is on. */
+function gameEventIsCreepNoise(obj: any): boolean {
+	if (!ignoreCreeps.value) {
+		return false
+	}
+	for (const key of ["entindex_killed", "entindex_attacker", "entindex_inflictor"]) {
+		const index = obj?.[key]
+		if (
+			typeof index === "number" &&
+			index > 0 &&
+			EntityManager.EntityByIndex<Unit>(index)?.IsCreep === true
+		) {
+			return true
+		}
+	}
+	return false
+}
+
+/** A particle's unit for the creep filter: the one it is attached to, else its modifiers'. */
+function particleUnit(par: NetworkedParticle): Nullable<Unit | FakeUnit> {
+	const target = par.AttachedTo ?? par.ModifiersAttachedTo
+	return target instanceof Unit || target instanceof FakeUnit ? target : undefined
+}
+
+function logTeleport(event: string, data: UnitPortalData) {
+	const caster = data.Caster
+	SafeLog(GameState.RawGameTime, event, {
+		caster: caster?.Name,
+		casterIndex: caster?.Index,
+		isEnemy: caster?.IsEnemy(),
+		abilityName: data.AbilityName,
+		isValid: data.IsValid,
+		isCanceled: data.IsCanceled,
+		maxDuration: data.MaxDuration,
+		remainingTime: data.RemainingTime,
+		target: data.Target?.Name,
+		startPosition: data.StartPosition.toArray().map(x => Math.floor(x)),
+		endPosition: data.EndPosition.toArray().map(x => Math.floor(x)),
+		raw: data
+	})
+}
+EventsSDK.on("UnitPortalChanged", data => {
+	if (isOn(debugTeleports)) {
+		logTeleport("UnitPortalChanged", data)
+	}
+})
+EventsSDK.on("UnitPortalDestroyed", data => {
+	if (isOn(debugTeleports)) {
+		logTeleport("UnitPortalDestroyed", data)
+	}
+})
+
 EventsSDK.on("GameEvent", (name, obj) => {
-	if (!debugEvents.value) {
+	if (!isOn(debugEvents) || gameEventIsCreepNoise(obj)) {
 		return
 	}
 	SafeLog("GameEvent", name, obj)
 })
 EventsSDK.on("ServerInfo", obj => {
-	if (!debugEvents.value) {
+	if (!isOn(debugEvents)) {
 		return
 	}
 	SafeLog("ServerInfo", SharedSDK.MapToObject(obj))
 })
 
 EventsSDK.on("ParticleCreated", par => {
-	if (!debugEvents.value) {
+	if (!isOn(debugEvents) || isCreepNoise(particleUnit(par))) {
 		return
 	}
 	console.log(GameState.RawGameTime, {
@@ -582,7 +643,7 @@ EventsSDK.on("ParticleCreated", par => {
 })
 
 EventsSDK.on("ParticleUpdated", par => {
-	if (!debugEvents.value) {
+	if (!isOn(debugEvents) || isCreepNoise(particleUnit(par))) {
 		return
 	}
 	console.log(GameState.RawGameTime, {
@@ -591,7 +652,7 @@ EventsSDK.on("ParticleUpdated", par => {
 })
 
 EventsSDK.on("ParticleDestroyed", par => {
-	if (!debugEvents.value) {
+	if (!isOn(debugEvents) || isCreepNoise(particleUnit(par))) {
 		return
 	}
 	console.log(GameState.RawGameTime, {
@@ -600,7 +661,7 @@ EventsSDK.on("ParticleDestroyed", par => {
 })
 
 EventsSDK.on("StartSound", (name, sourceEnt, position, _seed, startTime) => {
-	if (!debugEvents.value) {
+	if (!isOn(debugEvents) || isCreepNoise(sourceEnt)) {
 		return
 	}
 	console.log(GameState.RawGameTime, {
@@ -614,7 +675,7 @@ EventsSDK.on("StartSound", (name, sourceEnt, position, _seed, startTime) => {
 })
 
 EventsSDK.on("ModifierCreated", mod => {
-	if (!debugEvents.value) {
+	if (!isOn(debugEvents) || isCreepNoise(mod.Parent)) {
 		return
 	}
 	console.log(GameState.RawGameTime, {
@@ -625,7 +686,7 @@ EventsSDK.on("ModifierCreated", mod => {
 })
 
 EventsSDK.on("ModifierRemoved", mod => {
-	if (!debugEvents.value) {
+	if (!isOn(debugEvents) || isCreepNoise(mod.Parent)) {
 		return
 	}
 	console.log(GameState.RawGameTime, {
@@ -635,9 +696,122 @@ EventsSDK.on("ModifierRemoved", mod => {
 	})
 })
 
+/**
+ * The events that tell something happened to a unit - a cast, an attack, an animation, a voice
+ * line: the ones maphack listens to. Each switch logs its event's raw payload to the console, to
+ * find how to detect an action.
+ */
+const actionEventsMenu = debugEventsMenu.AddNode(
+	"Action events",
+	DebuggerIcons.ActionEvents,
+	"Logs the events that signal in-game actions to the console"
+)
+/** A switch of the action events. */
+const actionToggle = (name: string, tooltip: string, iconPath: string) =>
+	withIcon(actionEventsMenu.AddToggle(name, false, tooltip), iconPath)
+const logAbilityPhase = actionToggle(
+	"AbilityPhaseChanged",
+	"A cast point started or ended: a cast began or was cut off",
+	DebuggerIcons.AbilityPhase
+)
+const logAbilityChannel = actionToggle(
+	"AbilityChannelingChanged",
+	"A channel started or stopped",
+	DebuggerIcons.AbilityChannel
+)
+const logAttackStart = actionToggle(
+	"AttackStarted",
+	"A unit started an attack, with its attack point and animation names",
+	DebuggerIcons.AttackStarted
+)
+const logAttackEnd = actionToggle(
+	"AttackEnded",
+	"A unit's attack ended or was cancelled",
+	DebuggerIcons.AttackEnded
+)
+const logAddGesture = actionToggle(
+	"UnitAddGesture",
+	"An animation gesture was put on a unit",
+	DebuggerIcons.Gesture
+)
+const logUnitAnimation = actionToggle(
+	"UnitAnimation",
+	"A unit's animation sequence changed",
+	DebuggerIcons.Animation
+)
+const logUnitSpeech = actionToggle(
+	"UnitSpeech",
+	"Hero voice lines and responses",
+	DebuggerIcons.Speech
+)
+const logFakeUnit = actionToggle(
+	"FakeUnit created / destroyed",
+	"Units in the fog of war, which the SDK tracks as FakeUnit",
+	DebuggerIcons.FakeUnits
+)
+
+EventsSDK.on("AbilityPhaseChanged", ability => {
+	if (isOn(logAbilityPhase) && !isCreepNoise(ability.Owner)) {
+		console.log(GameState.RawGameTime, { AbilityPhaseChanged: ability })
+	}
+})
+EventsSDK.on("AbilityChannelingChanged", ability => {
+	if (isOn(logAbilityChannel) && !isCreepNoise(ability.Owner)) {
+		console.log(GameState.RawGameTime, { AbilityChannelingChanged: ability })
+	}
+})
+EventsSDK.on("AttackStarted", (unit, castPoint, animationNames) => {
+	if (isOn(logAttackStart) && !isCreepNoise(unit)) {
+		console.log(GameState.RawGameTime, {
+			AttackStarted: { unit, castPoint, animationNames }
+		})
+	}
+})
+EventsSDK.on("AttackEnded", (unit, isCancelled) => {
+	if (isOn(logAttackEnd) && !isCreepNoise(unit)) {
+		console.log(GameState.RawGameTime, {
+			AttackEnded: { unit, isCancelled }
+		})
+	}
+})
+EventsSDK.on("UnitAddGesture", (npc, activity, slot) => {
+	if (isOn(logAddGesture) && !isCreepNoise(npc)) {
+		console.log(GameState.RawGameTime, {
+			UnitAddGesture: { npc, activity: GameActivity[activity], slot }
+		})
+	}
+})
+EventsSDK.on("UnitAnimation", (npc, _sequence, _rate, _castPoint, type, activity) => {
+	if (isOn(logUnitAnimation) && !isCreepNoise(npc)) {
+		console.log(GameState.RawGameTime, {
+			UnitAnimation: { npc, type, activity: GameActivity[activity] }
+		})
+	}
+})
+EventsSDK.on("UnitSpeech", (npc, concept, response) => {
+	if (isOn(logUnitSpeech) && !isCreepNoise(npc)) {
+		console.log(GameState.RawGameTime, {
+			UnitSpeech: { npc, concept, response }
+		})
+	}
+})
+EventsSDK.on("FakeUnitCreated", unit => {
+	if (isOn(logFakeUnit)) {
+		console.log(GameState.RawGameTime, { FakeUnitCreated: unit })
+	}
+})
+EventsSDK.on("FakeUnitDestroyed", unit => {
+	if (isOn(logFakeUnit)) {
+		console.log(GameState.RawGameTime, { FakeUnitDestroyed: unit })
+	}
+})
+
 EventsSDK.on("GameEnded", () => {
 	pressSven = false
 	pressCreeps = false
+	lastGNVKey = undefined
+	lastGNVAt = -Infinity
+	gnvHeightCache.clear()
 	sleeper.FullReset()
 })
 

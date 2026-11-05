@@ -38,5 +38,32 @@ export const DebuggerIcons = {
 	Humanizer: icon("mouse-pointer-click"),
 	DebugDraw: Menu.Icons.Pencil,
 	DebugOrders: icon("list-ordered"),
-	UnsafeMode: icon("triangle-alert")
+	UnsafeMode: icon("triangle-alert"),
+	/** The switch that silences every output of the debugger at once. */
+	Master: Menu.Icons.Power,
+	Teleports: Menu.Icons.Zap,
+	/** Creep-sourced events left out of the console. */
+	IgnoreCreeps: Menu.Icons.IconCreeps,
+	VisualDebug: Menu.Icons.Monitor,
+	InfoPanel: Menu.Icons.PanelLeft,
+	PanelPosition: Menu.Icons.Move,
+	Filter: Menu.Icons.ListFilter,
+	Particles: Menu.Icons.Sparkles,
+	Modifiers: Menu.Icons.SquareStack,
+	TwinGates: Menu.Icons.ArrowUpDown,
+	ActionEvents: Menu.Icons.Activity,
+	AbilityPhase: Menu.Icons.Timer,
+	AbilityChannel: Menu.Icons.Hourglass,
+	AttackStarted: icon("swords"),
+	AttackEnded: icon("sword"),
+	Gesture: Menu.Icons.Animation,
+	Animation: Menu.Icons.MonitorPlay,
+	Speech: Menu.Icons.Volume,
+	FakeUnits: Menu.Icons.EyeOff
 } as const
+
+/** Puts a glyph on a row and hands the row back, so a declaration stays one chain. */
+export function withIcon<T extends Menu.Base>(entry: T, iconPath: string): T {
+	entry.IconPath = iconPath
+	return entry
+}

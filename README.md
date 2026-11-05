@@ -3,6 +3,7 @@
 - [x] Display information about GUI, GridNav, cursor
 - [x] Console commands (sv_cheats, wtf, unit creation)
 - [x] Debug game events and particles
+- [x] Extensible visual debug overlay + on-screen panel (projectiles, teleports, …)
 - [x] Humanizer settings
 ---
 # Отладчик
@@ -10,6 +11,7 @@
 - [x] Отображение информации о GUI, GridNav, курсоре
 - [x] Консольные команды (sv_cheats, wtf, создание юнитов)
 - [x] Отладка событий игры и частиц
+- [x] Расширяемый визуальный дебаг + экранная панель (снаряды, телепорты, …)
 - [x] Настройки humanizer
 ---
 # 调试器
@@ -17,4 +19,5 @@
 - [x] 显示GUI、GridNav、光标信息
 - [x] 控制台命令（sv_cheats、wtf、创建单位）
 - [x] 调试游戏事件和粒子
+- [x] 可扩展的可视化调试叠加层 + 屏幕面板（弹道、传送等）
 - [x] 人性化设置
