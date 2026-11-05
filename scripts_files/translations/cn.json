@@ -62,6 +62,8 @@
 	"debug_draw": "调试绘制",
 	"debug_orders": "调试指令",
 	"Logs every order the humanizer sends to the console": "在控制台输出人性化者发送的每条指令",
+	"debug_log": "人性化者日志",
+	"Logs the humanizer step by step: its camera and what moved it,\nits cursor and target, the player's camera and cursor, every order's way\nInto cdp-mcp logs/humanizer.log": "逐步记录人性化者：其镜头及移动原因，\n光标与目标、玩家的镜头与光标、每条指令的经过\n写入 cdp-mcp logs/humanizer.log",
 	"unsafe_mode": "不安全模式",
 	"Sends orders at once, without the humanizer": "立即发送指令，不经过人性化者",
 	"Draws the humanizer's camera zones, its cursor and target": "绘制人性化者的镜头区域、光标及其目标",

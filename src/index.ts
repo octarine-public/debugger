@@ -266,6 +266,14 @@ withIcon(
 ).OnValue(toggle => (ExecuteOrder.DebugOrders = toggle.value))
 withIcon(
 	humanizerMenu.AddToggle(
+		"debug_log",
+		false,
+		"Logs the humanizer step by step: its camera and what moved it,\nits cursor and target, the player's camera and cursor, every order's way\nInto cdp-mcp logs/humanizer.log"
+	),
+	DebuggerIcons.DebugLog
+).OnValue(toggle => (ExecuteOrder.DebugLog = toggle.value))
+withIcon(
+	humanizerMenu.AddToggle(
 		"unsafe_mode",
 		false,
 		"Sends orders at once, without the humanizer"

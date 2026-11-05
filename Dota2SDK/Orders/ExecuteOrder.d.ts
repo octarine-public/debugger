@@ -17,6 +17,16 @@ declare class ExecuteOrder {
 	public static lastMove: Nullable<[Vector3, number, readonly Unit[]]>
 	public static DebugOrders: boolean
 	public static DebugDraw: boolean
+	/**
+	 * Whether the humanizer logs, step by step, its camera - where it is and what moved it - its
+	 * cursor and what it goes to, the player's camera and cursor, and every order's way through it,
+	 * one JSON line a record into `globalThis.__humanizerLogBuf`, which cdp-mcp drains into its
+	 * `logs/humanizer.log`.
+	 * @example
+	 * ExecuteOrder.DebugLog = true
+	 */
+	public static get DebugLog(): boolean
+	public static set DebugLog(on: boolean)
 	public static HoldOrders: number
 	public static HoldOrdersTarget: Nullable<Vector3 | Entity>
 	public static cameraMinimapSpaces: number

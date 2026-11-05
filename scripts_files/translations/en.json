@@ -18,6 +18,7 @@
 	"neutral": "Neutral",
 	"debug_draw": "Debug draw",
 	"debug_orders": "Debug orders",
+	"debug_log": "Humanizer log",
 	"unsafe_mode": "Unsafe mode",
 	"order_stats": "Order stats",
 	"order_marks": "Order marks"

@@ -40,6 +40,7 @@ export const DebuggerIcons = {
 	OrderStats: Menu.Icons.LevelBars,
 	OrderMarks: Menu.Icons.CircleCheck,
 	DebugOrders: icon("list-ordered"),
+	DebugLog: icon("terminal"),
 	UnsafeMode: icon("triangle-alert"),
 	HeightMap: Menu.Icons.Checkerboard,
 	HeightMapGrid: icon("grid"),

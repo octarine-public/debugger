@@ -62,6 +62,8 @@
 	"debug_draw": "Отладочная отрисовка",
 	"debug_orders": "Отладка приказов",
 	"Logs every order the humanizer sends to the console": "Выводит в консоль каждый приказ, отправленный хуманайзером",
+	"debug_log": "Лог хуманайзера",
+	"Logs the humanizer step by step: its camera and what moved it,\nits cursor and target, the player's camera and cursor, every order's way\nInto cdp-mcp logs/humanizer.log": "Пошаговый лог хуманайзера: его камера и что её сдвинуло,\nкурсор и цель, камера и курсор игрока, путь каждого приказа\nВ cdp-mcp logs/humanizer.log",
 	"unsafe_mode": "Небезопасный режим",
 	"Sends orders at once, without the humanizer": "Отправляет приказы сразу, без хуманайзера",
 	"Draws the humanizer's camera zones, its cursor and target": "Рисует зоны камеры хуманайзера, его курсор и цель",
