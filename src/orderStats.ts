@@ -325,29 +325,40 @@ function Match(list: Sent[], order: WireOrder, now: number): Nullable<Sent> {
 	return undefined
 }
 
-/** The world point the server's cursor was on in `cmd`: the minimap's if the cursor is on it. */
-function CursorPointOf(cmd: WireUserCmd): CursorPoint {
-	const window = RendererSDK.WindowSize,
+/**
+ * The world point the server's cursor was on in `cmd` for an order aimed at `aim`: the game's
+ * own point under it, or the minimap's when the cursor lies on the minimap and that one comes
+ * nearer to `aim`. The cursor's coarse grid and the minimap's bounds put a click by the minimap's
+ * edge on it now and then, while the game took it in the world.
+ */
+function CursorPointOf(cmd: WireUserCmd, aim: Vector3): CursorPoint {
+	const world: CursorPoint = {
+			x: cmd.underX,
+			y: cmd.underY,
+			z: cmd.underZ,
+			minimap: false,
+			slack: 0
+		},
+		window = RendererSDK.WindowSize,
 		rect = GUIInfo.Minimap?.MinimapRenderBounds,
 		screen = new Vector2(
 			(cmd.mouseX / MOUSE_WIDTH) * window.x,
 			(cmd.mouseY / MOUSE_HEIGHT) * window.y
 		)
-	if (rect !== undefined && rect.Contains(screen)) {
-		const world = MinimapSDK.MinimapToWorld(screen)
-		if (world !== undefined) {
-			const perPixel = MinimapSDK.MinimapBounds.Size.x / rect.Width
-			return {
-				x: world.x,
-				y: world.y,
-				z: world.z,
-				minimap: true,
-				slack:
-					Math.hypot(window.x / MOUSE_WIDTH, window.y / MOUSE_HEIGHT) * perPixel
-			}
-		}
+	if (rect === undefined || !rect.Contains(screen)) {
+		return world
 	}
-	return { x: cmd.underX, y: cmd.underY, z: cmd.underZ, minimap: false, slack: 0 }
+	const onMinimap = MinimapSDK.MinimapToWorld(screen)
+	if (onMinimap === undefined) {
+		return world
+	}
+	const slack =
+		Math.hypot(window.x / MOUSE_WIDTH, window.y / MOUSE_HEIGHT) *
+		(MinimapSDK.MinimapBounds.Size.x / rect.Width)
+	return Math.hypot(onMinimap.x - aim.x, onMinimap.y - aim.y) - slack <
+		Math.hypot(world.x - aim.x, world.y - aim.y)
+		? { x: onMinimap.x, y: onMinimap.y, z: onMinimap.z, minimap: true, slack }
+		: world
 }
 
 function OnTarget(order: Outgoing, cmd: WireUserCmd, point: CursorPoint): boolean {
@@ -376,7 +387,7 @@ function Judge(order: Outgoing): void {
 		}
 	}
 	const cmd = before?.[before.length - 1],
-		point = cmd === undefined ? undefined : CursorPointOf(cmd),
+		point = cmd === undefined ? undefined : CursorPointOf(cmd, order.aim),
 		ok =
 			!order.cursorless &&
 			cmd !== undefined &&
@@ -449,7 +460,7 @@ function Follow(time: number, commands: WireUserCmd[]): void {
 		const late = time - order.time > REACH_SPAN
 		let hit = false
 		for (let j = 0, end = late ? 0 : commands.length; j < end && !hit; j++) {
-			hit = OnTarget(order, commands[j], CursorPointOf(commands[j]))
+			hit = OnTarget(order, commands[j], CursorPointOf(commands[j], order.aim))
 		}
 		if (hit || late) {
 			record.reach = hit ? time - order.time : -1
