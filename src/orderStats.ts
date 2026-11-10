@@ -57,10 +57,17 @@ interface Judged {
 	readonly owner: OrderOwner
 	readonly ok: boolean
 	readonly distance: number
+	/** Whether the server's cursor was on the unit the order is given at (`OnUnit`): it is off by nothing. */
+	readonly onUnit: boolean
 	readonly minimap: boolean
 	readonly clickToWire: number
 	/** Ms from the order to the first move message with the cursor on its target; -1 for none in 1 s. */
 	reach: number
+	/**
+	 * The unit under the server's cursor against the game's own under the player's (`CompareUnits`),
+	 * for a click of the player's the server's cursor was on; none for the rest.
+	 */
+	readonly units: Nullable<UnitCheck>
 	readonly order: Outgoing
 	readonly underX: number
 	readonly underY: number
@@ -75,6 +82,46 @@ interface CursorPoint {
 	readonly z: number
 	readonly minimap: boolean
 	readonly slack: number
+}
+
+/** How the unit under the server's cursor compares with the one the game has under the player's. */
+const enum UnitCheck {
+	/** The same unit, or none under either. */
+	Same,
+	/** The server's cursor is on a unit, the game has none under the player's. */
+	ServerOnly,
+	/** The game has a unit under the player's cursor, the server's cursor is on none. */
+	GameOnly,
+	/** Both are on a unit, each on another. */
+	Other
+}
+
+/** `UnitCheck` by name, for reading over the debugger protocol. */
+const UNIT_CHECKS = ["same", "server only", "game only", "other"]
+
+/** Our user commands compared with the game's own (`CheckUnits`) over the panel's span. */
+interface UnitCounts {
+	readonly compared: number
+	readonly serverOnly: number
+	readonly gameOnly: number
+	readonly other: number
+}
+
+/** A user command of ours whose unit under the cursor was not the game's (`CheckUnits`). */
+interface UnitMiss {
+	readonly time: number
+	readonly check: UnitCheck
+	readonly server: string
+	readonly game: string
+	/** Whether the player's cursor was over the HUD. */
+	readonly hud: boolean
+	/** The player's camera distance: past the humanizer's own the two see a unit at other angles. */
+	readonly zoom: number
+	/** The server's cursor on its 511x384 grid. */
+	readonly mouse: [number, number]
+	/** The server's camera, and the player's eye. */
+	readonly camera: [number, number]
+	readonly eye: [number, number]
 }
 
 interface Mark {
@@ -99,6 +146,11 @@ interface Summary {
 	readonly peak: number
 	readonly dropped: number
 	readonly lost: number
+	/** The player's clicks whose units were compared (`Judged.units`), and those not the game's. */
+	readonly clickUnits: number
+	readonly clickUnitsOff: number
+	/** Our user commands compared with the game's, in the player's and the total column only. */
+	readonly commandUnits: Nullable<UnitCounts>
 }
 
 interface Row {
@@ -134,7 +186,10 @@ const MOUSE_WIDTH = 511,
 	MOUSE_HEIGHT = 384
 const MAX_SCRIPTS = 2,
 	MAX_MISSES = 5,
-	MAX_MARKS = 20
+	MAX_MARKS = 20,
+	MAX_UNIT_MISSES = 50
+/** An entity index in a weaponselect, which may come as a handle; this one stands for none. */
+const INDEX_MASK = 0x3fff
 const MARK_OK_MS = 1500,
 	MARK_MISS_MS = 5000
 
@@ -183,6 +238,38 @@ const GROUPS: Group[] = [
 		]
 	},
 	{
+		title: "Unit under the cursor, server vs game",
+		rows: [
+			{
+				label: "Commands: other unit",
+				value: s =>
+					s.commandUnits === undefined || s.commandUnits.compared === 0
+						? "–"
+						: `${s.commandUnits.serverOnly + s.commandUnits.gameOnly + s.commandUnits.other}/${s.commandUnits.compared}`
+			},
+			{
+				label: "Server sees one, game not",
+				value: s =>
+					s.commandUnits === undefined ? "–" : `${s.commandUnits.serverOnly}`
+			},
+			{
+				label: "Game sees one, server not",
+				value: s =>
+					s.commandUnits === undefined ? "–" : `${s.commandUnits.gameOnly}`
+			},
+			{
+				label: "Different units",
+				value: s =>
+					s.commandUnits === undefined ? "–" : `${s.commandUnits.other}`
+			},
+			{
+				label: "Clicks: other unit",
+				value: s =>
+					s.clickUnits === 0 ? "–" : `${s.clickUnitsOff}/${s.clickUnits}`
+			}
+		]
+	},
+	{
 		title: "Delays, ms: p50 / p95",
 		rows: [{ label: "Click → sent to the server", value: s => Spread(s.clickToWire) }]
 	},
@@ -207,7 +294,11 @@ const cursorsAtGiven = new WeakMap<ExecuteOrder, Cursors>(),
 	clicks: Sent[] = [],
 	sentByScripts: Sent[] = [],
 	outgoing: Outgoing[] = [],
-	moves: [number, WireUserCmd[]][] = [],
+	/** Move messages of the last `MOVES_SPAN`: when, their commands and the game's own unit (`GetGameWeaponSelect`). */
+	moves: [number, WireUserCmd[], number][] = [],
+	/** Our user commands compared with the game's (`CheckUnits`): when, and how. */
+	unitChecks: [number, UnitCheck][] = [],
+	unitMisses: UnitMiss[] = [],
 	judged: Judged[] = [],
 	following: [Judged, Outgoing][] = [],
 	misses: Judged[] = [],
@@ -235,6 +326,8 @@ function Reset(): void {
 	sentByScripts.length = 0
 	outgoing.length = 0
 	moves.length = 0
+	unitChecks.length = 0
+	unitMisses.length = 0
 	judged.length = 0
 	following.length = 0
 	misses.length = 0
@@ -361,13 +454,23 @@ function CursorPointOf(cmd: WireUserCmd, aim: Vector3): CursorPoint {
 		: world
 }
 
-function OnTarget(order: Outgoing, cmd: WireUserCmd, point: CursorPoint): boolean {
-	if (
+/**
+ * Whether the server's cursor in `cmd` was on the unit `order` is given at: the game's unit under
+ * it (`weaponSelect`) is that one. The ground under the cursor then lies behind the unit - a
+ * hero's chest stands some 40-80 units in front of the ground the ray through it meets - and says
+ * nothing of how far off it was.
+ */
+function OnUnit(order: Outgoing, cmd: WireUserCmd): boolean {
+	return (
 		order.target >= 0 &&
 		order.type !== dotaunitorder_t.DOTA_UNIT_ORDER_CAST_TARGET_TREE &&
 		(cmd.weaponSelect === order.target ||
-			(cmd.weaponSelect & 0x3fff) === order.target)
-	) {
+			(cmd.weaponSelect & INDEX_MASK) === order.target)
+	)
+}
+
+function OnTarget(order: Outgoing, cmd: WireUserCmd, point: CursorPoint): boolean {
+	if (OnUnit(order, cmd)) {
 		return true
 	}
 	return (
@@ -376,23 +479,122 @@ function OnTarget(order: Outgoing, cmd: WireUserCmd, point: CursorPoint): boolea
 	)
 }
 
+/** The entity index a weaponselect names, 0 for none. */
+function UnitIndex(weaponSelect: number): number {
+	const index = weaponSelect & INDEX_MASK
+	return index === INDEX_MASK ? 0 : index
+}
+
+function UnitName(index: number): string {
+	return index === 0 ? "-" : (EntityManager.EntityByIndex(index)?.Name ?? `#${index}`)
+}
+
+/** How the server's unit `server` compares with the game's `game`, both entity indices, 0 none. */
+function CompareUnits(server: number, game: number): UnitCheck {
+	if (server === game) {
+		return UnitCheck.Same
+	}
+	if (game === 0) {
+		return UnitCheck.ServerOnly
+	}
+	return server === 0 ? UnitCheck.GameOnly : UnitCheck.Other
+}
+
+/**
+ * Compares the unit under the server's cursor in `cmd`, the last of a move message of ours sent at
+ * `time`, with the one the game has under the player's cursor in its own command of that message
+ * (`game`, `GetGameWeaponSelect`), while the server's cursor stands on the player's ground point
+ * (`ON_TARGET`): the humanizer follows the player then, and another unit is one the server sees
+ * that the player does not.
+ */
+function CheckUnits(time: number, cmd: WireUserCmd, game: number): void {
+	const player = InputManager.CursorOnWorld
+	if (
+		!player.IsValid ||
+		player.z < -1024 ||
+		Math.hypot(cmd.underX - player.x, cmd.underY - player.y) > ON_TARGET
+	) {
+		return
+	}
+	const server = UnitIndex(cmd.weaponSelect),
+		ours = UnitIndex(game),
+		check = CompareUnits(server, ours)
+	unitChecks.push([time, check])
+	Prune(unitChecks, entry => entry[0], time - SPAN)
+	if (check === UnitCheck.Same) {
+		return
+	}
+	const eye = CameraSDK.Position
+	unitMisses.unshift({
+		time,
+		check,
+		server: UnitName(server),
+		game: UnitName(ours),
+		hud: InputManager.CursorOverHUD,
+		zoom: Math.round(CameraSDK.Distance),
+		mouse: [cmd.mouseX, cmd.mouseY],
+		camera: [Math.round(cmd.cameraX), Math.round(cmd.cameraY)],
+		eye: [Math.round(eye.x), Math.round(eye.y)]
+	})
+	if (unitMisses.length > MAX_UNIT_MISSES) {
+		unitMisses.length = MAX_UNIT_MISSES
+	}
+}
+
+function CountUnits(now: number): UnitCounts {
+	Prune(unitChecks, entry => entry[0], now - SPAN)
+	let serverOnly = 0,
+		gameOnly = 0,
+		other = 0
+	for (let i = 0, end = unitChecks.length; i < end; i++) {
+		switch (unitChecks[i][1]) {
+			case UnitCheck.ServerOnly:
+				serverOnly++
+				break
+			case UnitCheck.GameOnly:
+				gameOnly++
+				break
+			case UnitCheck.Other:
+				other++
+				break
+			default:
+				break
+		}
+	}
+	return { compared: unitChecks.length, serverOnly, gameOnly, other }
+}
+
+/** Whether `units` says the server had another unit under its cursor than the game. */
+function UnitsOff(units: Nullable<UnitCheck>): boolean {
+	return units !== undefined && units !== UnitCheck.Same
+}
+
 /** Judges `order` by the last user command of the last move message that went before it. */
 function Judge(order: Outgoing): void {
-	let before: Nullable<WireUserCmd[]>, beforeTime: Nullable<number>
+	let before: Nullable<WireUserCmd[]>,
+		beforeTime: Nullable<number>,
+		game = 0
 	for (let i = moves.length - 1; i > -1; i--) {
 		if (moves[i][0] <= order.time) {
 			before = moves[i][1]
 			beforeTime = moves[i][0]
+			game = moves[i][2]
 			break
 		}
 	}
 	const cmd = before?.[before.length - 1],
 		point = cmd === undefined ? undefined : CursorPointOf(cmd, order.aim),
+		onUnit = !order.cursorless && cmd !== undefined && OnUnit(order, cmd),
 		ok =
 			!order.cursorless &&
 			cmd !== undefined &&
 			point !== undefined &&
 			OnTarget(order, cmd, point),
+		units =
+			ok && cmd !== undefined && order.owner === OrderOwner.Player
+				? CompareUnits(UnitIndex(cmd.weaponSelect), UnitIndex(game))
+				: undefined,
+		unitsOff = UnitsOff(units),
 		record: Judged = {
 			time: order.time,
 			owner: order.owner,
@@ -400,12 +602,16 @@ function Judge(order: Outgoing): void {
 			distance:
 				point === undefined
 					? NaN
-					: Math.round(
-							Math.hypot(point.x - order.aim.x, point.y - order.aim.y)
-						),
+					: onUnit
+						? 0
+						: Math.round(
+								Math.hypot(point.x - order.aim.x, point.y - order.aim.y)
+							),
+			onUnit,
 			minimap: point?.minimap ?? false,
 			clickToWire: Number.isNaN(order.given) ? NaN : order.time - order.given,
 			reach: ok ? 0 : NaN,
+			units,
 			order,
 			underX: point?.x ?? NaN,
 			underY: point?.y ?? NaN,
@@ -416,6 +622,9 @@ function Judge(order: Outgoing): void {
 	Prune(judged, entry => entry.time, order.time - SPAN)
 	if (!ok && !order.cursorless) {
 		following.push([record, order])
+	}
+	const missed = (!ok || unitsOff) && !order.cursorless
+	if (missed) {
 		misses.unshift(record)
 		if (misses.length > MAX_MISSES) {
 			misses.length = MAX_MISSES
@@ -424,14 +633,13 @@ function Judge(order: Outgoing): void {
 	if (!showMarks) {
 		return
 	}
-	const missed = !ok && !order.cursorless
 	marks.push({
 		aim: order.aim,
 		under:
-			!missed || cmd === undefined || point === undefined || point.minimap
+			ok || cmd === undefined || point === undefined || point.minimap
 				? undefined
 				: new Vector3(cmd.underX, cmd.underY, cmd.underZ),
-		color: order.cursorless ? CURSORLESS_COLOR : ok ? HIT_COLOR : MISS_COLOR,
+		color: order.cursorless ? CURSORLESS_COLOR : missed ? MISS_COLOR : HIT_COLOR,
 		until: hrtime() + (missed ? MARK_MISS_MS : MARK_OK_MS),
 		text: Describe(record)
 	})
@@ -444,11 +652,15 @@ function Describe(record: Judged): string {
 	const localize = (text: string) => MenuSDK.Localization.Localize(text),
 		distance = Number.isNaN(record.distance) ? "?" : `${record.distance}`,
 		ms = Number.isNaN(record.clickToWire) ? "?" : `${Math.round(record.clickToWire)}`,
-		minimap = record.minimap ? ` · ${localize("minimap")}` : ""
+		minimap = record.minimap ? ` · ${localize("minimap")}` : "",
+		units = UnitsOff(record.units) ? ` · ${localize("other unit")}` : ""
 	if (record.order.cursorless) {
 		return `${localize("no cursor")} · ${ms} ${localize("ms")}`
 	}
-	return `${record.ok ? "✓" : "✗"} ${distance} ${localize("u")} · ${ms} ${localize("ms")}${minimap}`
+	if (record.onUnit) {
+		return `✓ ${localize("on unit")} · ${ms} ${localize("ms")}${units}`
+	}
+	return `${record.ok ? "✓" : "✗"} ${distance} ${localize("u")} · ${ms} ${localize("ms")}${minimap}${units}`
 }
 
 function Follow(time: number, commands: WireUserCmd[]): void {
@@ -469,15 +681,19 @@ function Follow(time: number, commands: WireUserCmd[]): void {
 	}
 }
 
-Source2SDK.NativeEvents.on("UserCmdSent", (time, _own, commands) => {
+Source2SDK.NativeEvents.on("UserCmdSent", (time, own, commands) => {
 	if (!Collecting()) {
 		return
 	}
 	if (since === 0) {
 		since = time
 	}
-	moves.push([time, commands])
+	const game = GetGameWeaponSelect()
+	moves.push([time, commands, game])
 	Prune(moves, move => move[0], time - MOVES_SPAN)
+	if (own && commands.length !== 0) {
+		CheckUnits(time, commands[commands.length - 1], game)
+	}
 	Follow(time, commands)
 	for (let i = 0; i < outgoing.length; ) {
 		if (outgoing[i].time < time) {
@@ -603,18 +819,30 @@ function Peak(records: readonly Judged[]): number {
 	return best
 }
 
-function Summarize(owner: Nullable<OrderOwner>, now: number): Summary {
+function Summarize(
+	owner: Nullable<OrderOwner>,
+	now: number,
+	commandUnits: Nullable<UnitCounts>
+): Summary {
 	const records = owner === undefined ? judged : judged.filter(r => r.owner === owner),
 		distance: number[] = [],
 		reach: number[] = [],
 		clickToWire: number[] = []
 	let ok = 0,
 		never = 0,
-		cursorless = 0
+		cursorless = 0,
+		clickUnits = 0,
+		clickUnitsOff = 0
 	for (let i = 0, end = records.length; i < end; i++) {
 		const record = records[i]
 		if (!Number.isNaN(record.clickToWire)) {
 			clickToWire.push(record.clickToWire)
+		}
+		if (record.units !== undefined) {
+			clickUnits++
+			if (record.units !== UnitCheck.Same) {
+				clickUnitsOff++
+			}
 		}
 		if (record.order.cursorless) {
 			cursorless++
@@ -644,7 +872,10 @@ function Summarize(owner: Nullable<OrderOwner>, now: number): Summary {
 		),
 		peak: Peak(records),
 		dropped: CountOf(drops, owner),
-		lost: CountOf(lost, owner)
+		lost: CountOf(lost, owner),
+		clickUnits,
+		clickUnitsOff,
+		commandUnits
 	}
 }
 
@@ -725,7 +956,16 @@ function Refresh(now: number): void {
 		columns.push([scripts[i], scripts[i].Name, SCRIPT_COLORS[i]])
 	}
 	columns.push([undefined, localize("Total"), TOTAL_COLOR])
-	const summaries = columns.map(([owner]) => Summarize(owner, now)),
+	const commandUnits = CountUnits(now),
+		summaries = columns.map(([owner]) =>
+			Summarize(
+				owner,
+				now,
+				owner === undefined || owner === OrderOwner.Player
+					? commandUnits
+					: undefined
+			)
+		),
 		width = pad * 2 + labelWidth + columnWidth * columns.length,
 		inner = width - pad * 2,
 		x = Math.round(12 * scale),
@@ -914,6 +1154,10 @@ const globalThisAny = globalThis as any
 /** The orders the panel judged over the last minute, for reading over the debugger protocol. */
 globalThisAny.DEBUGGER_ORDER_STATS = () => ({
 	frameMs: [...frameGaps],
+	units: {
+		...CountUnits(hrtime()),
+		last: unitMisses.map(miss => ({ ...miss, check: UNIT_CHECKS[miss.check] }))
+	},
 	orders: judged.map(record => ({
 		time: Math.round(record.time),
 		owner: record.owner.Name,
@@ -923,6 +1167,7 @@ globalThisAny.DEBUGGER_ORDER_STATS = () => ({
 		minimap: record.minimap,
 		clickToWire: Math.round(record.clickToWire * 10) / 10,
 		reach: Math.round(record.reach),
+		units: record.units === undefined ? undefined : UNIT_CHECKS[record.units],
 		type: record.order.type,
 		moveBefore: Math.round(record.moveBefore * 10) / 10,
 		commands: record.commands,
