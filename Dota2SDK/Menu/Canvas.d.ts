@@ -60,7 +60,11 @@ declare namespace MenuSDK {
 		readonly flags?: TextFlags
 		readonly division?: number
 	}
-	/** The natural image size reported by RmlUi. */
+	/**
+	 * An image's own size in the file's pixels — the units `sourcePosition`, `sourceSize` and a crop
+	 * region are given in — the same at every resolution and menu scale. Zero until RmlUi has
+	 * measured it.
+	 */
 	function ImageSize(path: string): Vector2
 	/** The size of a text run in screen pixels. */
 	function TextSize(text: string, style?: CanvasTextStyle): Vector3

@@ -4,4 +4,5 @@ declare class modifier_item_abyssal_blade extends Modifier {
 	protected GetSlowResistanceStacking(): [number, boolean]
 	protected GetPreAttackBonusDamage(): [number, boolean]
 	protected UpdateSpecialValues(): void
+	public get IsPurgable(): boolean
 }

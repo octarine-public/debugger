@@ -4,4 +4,5 @@ declare class modifier_terrorblade_conjureimage extends Modifier {
 	protected GetIncomingDamagePercentage(): [number, boolean]
 	public UnitPropertyChanged(changed?: boolean): boolean
 	protected UpdateSpecialValues(): void
+	public get IsPurgable(): boolean
 }

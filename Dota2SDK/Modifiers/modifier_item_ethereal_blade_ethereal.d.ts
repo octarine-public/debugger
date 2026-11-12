@@ -11,5 +11,6 @@ declare class modifier_item_ethereal_blade_ethereal extends Modifier implements 
 	public IsShield(): this is IShield
 	public PreventsDeath(damageType: DAMAGE_TYPES): boolean
 	protected GetMagicalResistanceDecrepifyUnique(): [number, boolean]
+	protected GetAbsoluteNoDamagePhysical(): [number, boolean]
 	protected UpdateSpecialValues(): void
 }

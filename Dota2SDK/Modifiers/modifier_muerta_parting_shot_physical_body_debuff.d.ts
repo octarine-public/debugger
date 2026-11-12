@@ -8,4 +8,6 @@ declare class modifier_muerta_parting_shot_physical_body_debuff extends Modifier
 	public IsDisable(): this is IDisable
 	protected GetIncomingDamagePercentage(_params?: IModifierParams): [number, boolean]
 	protected UpdateSpecialValues(): void
+	public get IsPurgable(): boolean
+	public get IsStunDebuff(): boolean
 }

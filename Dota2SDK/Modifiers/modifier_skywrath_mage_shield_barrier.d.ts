@@ -11,4 +11,5 @@ declare class modifier_skywrath_mage_shield_barrier extends Modifier implements 
 	protected GetMagicalConstantBlock(_params?: IModifierParams): [number, boolean]
 	protected UpdateSpecialValues(): void
 	protected GetSpecialValue(specialName: string, abilityName: string, level?: number, optional?: ISpecialValueOptions): number
+	public get IsPurgable(): boolean
 }

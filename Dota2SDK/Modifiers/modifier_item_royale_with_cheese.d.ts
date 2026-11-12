@@ -12,4 +12,5 @@ declare class modifier_item_royale_with_cheese extends Modifier implements IBuff
 	public GetTexturePath(): string
 	protected GetTotalConstantBlock(): [number, boolean]
 	protected UpdateSpecialValues(): void
+	public get IsPurgable(): boolean
 }

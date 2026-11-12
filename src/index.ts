@@ -1,7 +1,17 @@
 import "./translations"
+import "./cameraRecorder"
+import "./clickDriver"
 
 import { canvas } from "../render"
+import {
+	SetHeightMapCellSize,
+	SetHeightMapFloorDifference,
+	ShowHeightMapCursor,
+	ShowHeightMapFloor,
+	ShowHeightMapGrid
+} from "./heightMap"
 import { DebuggerIcons, withIcon } from "./icons"
+import { ShowOrderMarks, ShowOrderStats } from "./orderStats"
 import { CreateVisualDebug } from "./visualDebug"
 
 const globalThisAny = globalThis as any
@@ -251,10 +261,26 @@ withIcon(
 	humanizerMenu.AddToggle(
 		"debug_draw",
 		false,
-		"Draws the humanizer's camera zones and cursor targets"
+		"Draws the humanizer's camera zones, its cursor and target"
 	),
 	DebuggerIcons.DebugDraw
 ).OnValue(toggle => (ExecuteOrder.DebugDraw = toggle.value))
+withIcon(
+	humanizerMenu.AddToggle(
+		"order_stats",
+		false,
+		"A panel of what the server got with each order over the last minute:\nwhether its cursor was on the target, how far off,\nand how long from the click to the order going out\nNeeds the Beta native"
+	),
+	DebuggerIcons.OrderStats
+).OnValue(toggle => ShowOrderStats(toggle.value))
+withIcon(
+	humanizerMenu.AddToggle(
+		"order_marks",
+		false,
+		"Marks each order's spot in the world: ✓ or ✗, how far the server's cursor was\nand how long from the click to the order going out\nNeeds the Beta native"
+	),
+	DebuggerIcons.OrderMarks
+).OnValue(toggle => ShowOrderMarks(toggle.value))
 withIcon(
 	humanizerMenu.AddToggle(
 		"debug_orders",
@@ -265,12 +291,73 @@ withIcon(
 ).OnValue(toggle => (ExecuteOrder.DebugOrders = toggle.value))
 withIcon(
 	humanizerMenu.AddToggle(
+		"debug_log",
+		false,
+		"Logs the humanizer step by step: its camera and what moved it,\nits cursor and target, the player's camera and cursor, every order's way\nInto cdp-mcp logs/humanizer.log"
+	),
+	DebuggerIcons.DebugLog
+).OnValue(toggle => (ExecuteOrder.DebugLog = toggle.value))
+withIcon(
+	humanizerMenu.AddToggle(
 		"unsafe_mode",
 		false,
 		"Sends orders at once, without the humanizer"
 	),
 	DebuggerIcons.UnsafeMode
 ).OnValue(toggle => (ExecuteOrder.unsafeMode = toggle.value))
+
+const heightMapMenu = debuggerMenu.AddNode(
+	"Height map",
+	DebuggerIcons.HeightMap,
+	"The .vhcg height map over the visible ground"
+)
+
+withIcon(
+	heightMapMenu.AddToggle(
+		"Grid",
+		false,
+		"Lines over the visible ground, every node at the height the map gives it;\nred dots are nodes without ground, orange the ones blended with them"
+	),
+	DebuggerIcons.HeightMapGrid
+).OnValue(toggle => ShowHeightMapGrid(toggle.value))
+withIcon(
+	heightMapMenu.AddSlider(
+		"Cell size",
+		32,
+		16,
+		512,
+		0,
+		"Side of a grid square in world units, aligned to the height map's corner;\na height map cell is 128 and holds a sample every 32"
+	),
+	DebuggerIcons.CellSize
+).OnValue(slider => SetHeightMapCellSize(slider.value))
+withIcon(
+	heightMapMenu.AddToggle(
+		"Cursor cell",
+		false,
+		"The square under the cursor and the height there"
+	),
+	DebuggerIcons.CursorCell
+).OnValue(toggle => ShowHeightMapCursor(toggle.value))
+withIcon(
+	heightMapMenu.AddToggle(
+		"World floor",
+		true,
+		"Where the world's physics floor, which clicks land on, leaves the height map:\na magenta grid at the floor's height over those nodes"
+	),
+	DebuggerIcons.WorldFloor
+).OnValue(toggle => ShowHeightMapFloor(toggle.value))
+withIcon(
+	heightMapMenu.AddSlider(
+		"Floor difference",
+		8,
+		1,
+		256,
+		0,
+		"How far the floor must be from the height map, in world units, to be drawn"
+	),
+	DebuggerIcons.FloorDifference
+).OnValue(slider => SetHeightMapFloorDifference(slider.value))
 
 CreateVisualDebug(debuggerMenu, masterState)
 

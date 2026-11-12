@@ -50,10 +50,15 @@ declare class NavGrid {
 	/**
 	 * Whether a unit of `hullRadius` can stand in the cell. Flying units ignore trees and
 	 * unwalkable ground but not movement blockers. With `avoidUnits` a unit standing in the cell
-	 * blocks it only where there is no room to slide past, a clearance below two cells: measured
-	 * on the demo map, the server brushes past units in the open and detours around one in a gap.
+	 * blocks it only where there is no room to slide past, a clearance below two cells: the server
+	 * brushes past units in the open and detours around one in a gap.
 	 */
 	public IsPassable(cell: number, hullRadius: number, flying: boolean, avoidUnits: boolean): boolean
+	/**
+	 * Whether a unit that walks through trees can stand in the cell: walkable, and blocked by
+	 * nothing but trees.
+	 */
+	public IsPassableThroughTrees(cell: number): boolean
 	/** Whether a tree stands in the cell. */
 	public HasTree(cell: number): boolean
 	/**
@@ -63,6 +68,12 @@ declare class NavGrid {
 	 * const blocked = PathfinderSDK.NavGrid.TreeInside(new Capsule2D(from, to, hookWidth))
 	 */
 	public TreeInside(shape: Capsule2D): boolean
+	/**
+	 * Lets go of the map's cells, the units on them and the sectors; they are built again from
+	 * the next map grid.
+	 * @internal
+	 */
+	public Release(): void
 	/** @internal */
 	public Sync(): boolean
 	/** @internal */

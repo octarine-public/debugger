@@ -3,5 +3,8 @@ declare class modifier_chaos_knight_phantasm_illusion extends Modifier {
 	protected readonly DeclaredFunction: Map<EModifierfunction, (_params?: IModifierParams) => [number, boolean]>
 	public UnitPropertyChanged(changed?: boolean): boolean
 	protected GetIncomingDamagePercentage(_params?: IModifierParams): [number, boolean]
+	protected GetDamageOutgoingPercentageIllusion(): [number, boolean]
+	protected GetMagicalResistanceBonusIllusions(): [number, boolean]
 	protected UpdateSpecialValues(): void
+	public get IsPurgable(): boolean
 }

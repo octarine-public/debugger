@@ -10,4 +10,5 @@ declare class modifier_oracle_diviners_deck_the_tower extends Modifier implement
 	public IsShield(): this is IShield
 	protected GetTotalConstantBlock(): [number, boolean]
 	protected UpdateSpecialValues(): void
+	public get IsPurgable(): boolean
 }

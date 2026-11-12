@@ -9,4 +9,5 @@ declare class modifier_obsidian_destroyer_equilibrium_barrier extends Modifier i
 	public IsBuff(): this is IBuff
 	public IsShield(): this is IShield
 	protected GetTotalConstantBlock(): [number, boolean]
+	public get IsPurgable(): boolean
 }

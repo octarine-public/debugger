@@ -10,4 +10,5 @@ declare class modifier_item_safety_bubble extends Modifier implements IBuff, ISh
 	public IsShield(): this is IShield
 	protected GetTotalConstantBlock(): [number, boolean]
 	protected UpdateSpecialValues(): void
+	public get IsPurgable(): boolean
 }

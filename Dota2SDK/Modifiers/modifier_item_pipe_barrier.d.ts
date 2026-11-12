@@ -9,4 +9,5 @@ declare class modifier_item_pipe_barrier extends Modifier implements IBuff, IShi
 	public IsBuff(): this is IBuff
 	public IsShield(): this is IShield
 	protected GetMagicalConstantBlock(): [number, boolean]
+	public get IsPurgable(): boolean
 }

@@ -7,4 +7,5 @@ declare class modifier_leshrac_decrepify_aura extends Modifier implements IBuff 
 	public IsBuff(): this is IBuff
 	protected GetMoveSpeedBonusPercentage(): [number, boolean]
 	protected UpdateSpecialValues(): void
+	public get IsPurgable(): boolean
 }

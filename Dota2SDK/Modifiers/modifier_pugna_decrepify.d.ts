@@ -11,5 +11,6 @@ declare class modifier_pugna_decrepify extends Modifier implements IDebuff, IBuf
 	public IsShield(): this is IShield
 	protected GetMagicalResistanceDecrepifyUnique(): [number, boolean]
 	protected GetMoveSpeedBonusPercentage(): [number, boolean]
+	protected GetAbsoluteNoDamagePhysical(): [number, boolean]
 	protected UpdateSpecialValues(): void
 }

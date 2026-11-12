@@ -312,6 +312,25 @@ declare namespace MenuSDK {
 		 * @see MenuHost.onRetainedPass
 		 */
 		public get Retained(): boolean
+		/**
+		 * Leaves what the surface shows exactly as the last frame wrote it, for a drawer whose frame
+		 * would come out the same: nothing is pushed, compared or written this frame. Answers whether
+		 * it did. A surface already drawn into this frame, one standing with no frame at all - never
+		 * drawn, or wiped since - or one with an image still waiting on its texture keeps nothing, and
+		 * its frame ends as it would have. Anything
+		 * pushed after a hold in the same frame opens the frame as usual and drops the hold.
+		 *
+		 * `shiftX` / `shiftY` stand the kept frame that many px off where it was drawn, the whole of it
+		 * at once, for a card pinned to the world whose anchor moved on screen while nothing on it
+		 * changed: the camera panning past a camp moves one element rather than rewriting every one.
+		 * The next frame drawn stands where its own commands put it again.
+		 *
+		 * @example
+		 * if (unchanged && surface.Keep(anchor.x - drawnAt.x, anchor.y - drawnAt.y)) {
+		 * 	return
+		 * }
+		 */
+		public Keep(shiftX?: number, shiftY?: number): boolean
 		public Open(): void
 		/**
 		 * A frame opens at its first command rather than on a call, so a caller drawing from more than
@@ -380,12 +399,26 @@ declare namespace MenuSDK {
 	 */
 	function EndHudFrame(): void
 	/**
+	 * Draws `drawer` at the end of every retained pass, so what it puts on a surface stands until the
+	 * next pass; on a host without a retained pass every frame is one, see {@link RunRetainedHudPass}.
+	 * For an overlay that stands on the screen and changes at a tick's rate - anything placed from a
+	 * world position is drawn every frame, or it trails the camera.
+	 * @example
+	 * OnRetainedHudPass(() => panel.Draw(size, origin => DrawStrip(origin)))
+	 */
+	function OnRetainedHudPass(drawer: () => void): void
+	/**
 	 * The host's retained pass begins: a surface opened from here until {@link EndRetainedHudPass}
 	 * keeps what it draws until the next pass. Wired to {@link MenuHost.onRetainedPass}.
 	 */
 	function BeginRetainedHudPass(): void
-	/** The host's retained pass is over; see {@link BeginRetainedHudPass}. */
+	/**
+	 * The host's retained pass is over once the drawers handed to {@link OnRetainedHudPass} have drawn;
+	 * see {@link BeginRetainedHudPass}.
+	 */
 	function EndRetainedHudPass(): void
+	/** A whole retained pass at once, every frame, for a host that runs none of its own. */
+	function RunRetainedHudPass(): void
 	/**
 	 * Asks the host to run its retained pass on the next frame, for a surface drawn in it that the
 	 * user is moving by hand - a panel in a drag, a hover easing in - which the pass's own rate would

@@ -194,6 +194,15 @@ declare namespace MenuSDK {
 		 */
 		public Plate(x: number, y: number, w: number, h: number, radius: number, color: Color, alpha?: number): void
 		/**
+		 * The shadow under a tile lifted into the hand, `lift` of the way, as the menu's image selector
+		 * drops one (`0 6dp 14dp #00000040`): dropped 6 dp, its blur laid as rounded plates from inside
+		 * the tile's edge to past it, all of it as deep as the tile is lifted. `rect` and `corner` are px.
+		 *
+		 * @example
+		 * HudCard.LiftShadow({ x, y, w: side, h: side }, side * 0.2, lift)
+		 */
+		public LiftShadow(rect: Readonly<ScreenRect>, corner: number, lift: number): void
+		/**
 		 * The dress a badge wears without its label: a plate washed `tint` deep in `color` and rimmed
 		 * `edge` deep in it by a hairline, for a chip whose contents the caller lays out itself - a
 		 * reading beside its word, a glyph in front of them. `radius` is in dp, like a badge's.

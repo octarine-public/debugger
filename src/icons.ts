@@ -37,6 +37,8 @@ export const DebuggerIcons = {
 	Projectiles: icon("rocket"),
 	Humanizer: icon("mouse-pointer-click"),
 	DebugDraw: Menu.Icons.Pencil,
+	OrderStats: Menu.Icons.LevelBars,
+	OrderMarks: Menu.Icons.CircleCheck,
 	DebugOrders: icon("list-ordered"),
 	UnsafeMode: icon("triangle-alert"),
 	/** The switch that silences every output of the debugger at once. */
@@ -59,7 +61,14 @@ export const DebuggerIcons = {
 	Gesture: Menu.Icons.Animation,
 	Animation: Menu.Icons.MonitorPlay,
 	Speech: Menu.Icons.Volume,
-	FakeUnits: Menu.Icons.EyeOff
+	FakeUnits: Menu.Icons.EyeOff,
+	DebugLog: icon("terminal"),
+	HeightMap: Menu.Icons.Checkerboard,
+	HeightMapGrid: icon("grid"),
+	CellSize: Menu.Icons.Radius,
+	CursorCell: Menu.Icons.Scan,
+	WorldFloor: Menu.Icons.BackdropLayers,
+	FloorDifference: Menu.Icons.ArrowUpDown
 } as const
 
 /** Puts a glyph on a row and hands the row back, so a declaration stays one chain. */

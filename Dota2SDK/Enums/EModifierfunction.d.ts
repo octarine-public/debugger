@@ -420,6 +420,12 @@ declare const enum EModifierfunction {
 	MODIFIER_PROPERTY_CURIO_MULTIPLIER_BONUS_CONSTANT = 417,
 	MODIFIER_PROPERTY_LINKEN_PROTECTION = 418,
 	MODIFIER_PROPERTY_PHYSICAL_ARMOR_BONUS_PERCENTAGE_POST = 419,
-	MODIFIER_FUNCTION_LAST = 420,
+	/** Damage it deals its parent by itself while it lasts - a burn (`Modifier.IsDamageOverTime`). */
+	MODIFIER_PROPERTY_DAMAGE_OVER_TIME = 420,
+	/** Health it heals its parent with by itself while it lasts (`Modifier.HealPerSecond`). */
+	MODIFIER_PROPERTY_HEAL_OVER_TIME = 421,
+	/** Ticks it adds to the hits of a spell (`Modifier.AddsHitTicks`). */
+	MODIFIER_PROPERTY_HIT_OVER_TIME = 422,
+	MODIFIER_FUNCTION_LAST = 423,
 	MODIFIER_FUNCTION_INVALID = 65535
 }
