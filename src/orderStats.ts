@@ -284,17 +284,12 @@ const GROUPS: Group[] = [
 	}
 ]
 
-/** Byte offsets of the point under the cursor in `LatestUserCmd`. */
-const UNDER_X = 69,
-	UNDER_Y = 73
-const userCmd = new DataView(LatestUserCmd.buffer)
-
 const cursorsAtGiven = new WeakMap<ExecuteOrder, Cursors>(),
 	given = new WeakMap<ExecuteOrder, number>(),
 	clicks: Sent[] = [],
 	sentByScripts: Sent[] = [],
 	outgoing: Outgoing[] = [],
-	/** Move messages of the last `MOVES_SPAN`: when, their commands and the game's own unit (`GetGameWeaponSelect`). */
+	/** Move messages of the last `MOVES_SPAN`: when, their commands and the game's own unit (`InputManager.WeaponSelect`). */
 	moves: [number, WireUserCmd[], number][] = [],
 	/** Our user commands compared with the game's (`CheckUnits`): when, and how. */
 	unitChecks: [number, UnitCheck][] = [],
@@ -688,7 +683,7 @@ Source2SDK.NativeEvents.on("UserCmdSent", (time, own, commands) => {
 	if (since === 0) {
 		since = time
 	}
-	const game = GetGameWeaponSelect()
+	const game = InputManager.WeaponSelect?.Index ?? 0
 	moves.push([time, commands, game])
 	Prune(moves, move => move[0], time - MOVES_SPAN)
 	if (own && commands.length !== 0) {
@@ -733,8 +728,8 @@ Source2SDK.NativeEvents.on("OrdersSent", (time, orders, fromGame) => {
 					: new Vector3(order.positionX, order.positionY, order.positionZ),
 			hull: target instanceof Unit ? target.HullRadius : 0,
 			cursors: sent?.cursors,
-			writtenX: userCmd.getFloat32(UNDER_X, true),
-			writtenY: userCmd.getFloat32(UNDER_Y, true),
+			writtenX: ExecuteOrder.CursorPoint.x,
+			writtenY: ExecuteOrder.CursorPoint.y,
 			cursorless: sent !== undefined && Cursorless(sent)
 		})
 	}
@@ -742,7 +737,7 @@ Source2SDK.NativeEvents.on("OrdersSent", (time, orders, fromGame) => {
 
 function Entry(order: ExecuteOrder, at: number): Sent {
 	const position = order.Position,
-		ability = order.Ability_
+		ability = order.Ability
 	return {
 		at,
 		given: given.get(order) ?? NaN,
@@ -753,7 +748,7 @@ function Entry(order: ExecuteOrder, at: number): Sent {
 		y: position.y,
 		cursors: cursorsAtGiven.get(order),
 		order,
-		tap: ability instanceof Ability && ability.IsDoubleTap(order)
+		tap: ability !== undefined && ability.IsDoubleTap(order)
 	}
 }
 
@@ -762,13 +757,14 @@ EventsSDK.on("PrepareUnitOrders", order => {
 		return
 	}
 	const now = hrtime(),
-		player = InputManager.CursorOnWorld
+		player = InputManager.CursorOnWorld,
+		written = ExecuteOrder.CursorPoint
 	given.set(order, now)
 	cursorsAtGiven.set(order, {
 		playerX: player.x,
 		playerY: player.y,
-		writtenX: userCmd.getFloat32(UNDER_X, true),
-		writtenY: userCmd.getFloat32(UNDER_Y, true)
+		writtenX: written.x,
+		writtenY: written.y
 	})
 	if (order.IsPlayerInput) {
 		clicks.push(Entry(order, now))

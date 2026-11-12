@@ -119,13 +119,12 @@ function Reset(): void {
 }
 
 function LoadMap(): boolean {
-	if (!WorldUtils.GetHeightMapData()) {
+	const map = HeightMap
+	if (map === undefined) {
 		return false
 	}
-	mapMin.x = IOBuffer[0]
-	mapMin.y = IOBuffer[1]
-	mapMax.x = mapMin.x + IOBuffer[2]
-	mapMax.y = mapMin.y + IOBuffer[3]
+	mapMin.CopyFrom(map.MinMapCoords)
+	mapMax.CopyFrom(map.MaxMapCoords)
 	return true
 }
 
